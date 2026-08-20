@@ -1437,41 +1437,51 @@
   }
 
   // One bar per booking per week, laid over the grid so a name can run across the
-  // days it covers. Rendering a piece inside each cell cannot do that: the text is
-  // cut at the cell edge, which is what made the bars look chopped up.
+  // days it covers. The grid is measured in half days: a stay starts at the middle
+  // of the arrival day and ends at the middle of the departure day, so a checkout
+  // morning is visible and a turnover day shows one guest leaving and one arriving.
   function renderBookingBars(gridStart, weeks) {
     const lastCell = addDays(gridStart, weeks * 7 - 1);
     const segments = [];
 
     activeBookings().forEach((booking) => {
-      // A stay occupies the nights slept, so the checkout morning is left free for
-      // whoever arrives that day.
-      const firstNight = parseISO(booking.checkIn);
-      const lastNight = addDays(parseISO(booking.checkOut), -1);
-      if (lastNight < gridStart || firstNight > lastCell) return;
+      const arrival = parseISO(booking.checkIn);
+      const departure = parseISO(booking.checkOut);
+      if (departure < gridStart || arrival > lastCell) return;
 
-      const from = firstNight < gridStart ? gridStart : firstNight;
-      const to = lastNight > lastCell ? lastCell : lastNight;
+      const from = arrival < gridStart ? gridStart : arrival;
+      const to = departure > lastCell ? lastCell : departure;
 
       let cursor = from;
       while (cursor <= to) {
         const rowEnd = addDays(cursor, 6 - cursor.getDay());
         const segmentEnd = rowEnd < to ? rowEnd : to;
-        const offset = Math.round((cursor - gridStart) / DAY_MS);
-        segments.push({
-          booking,
-          row: Math.floor(offset / 7),
-          column: cursor.getDay(),
-          span: Math.round((segmentEnd - cursor) / DAY_MS) + 1,
-          opensLeft: cursor.getTime() === firstNight.getTime(),
-          closesRight: segmentEnd.getTime() === lastNight.getTime(),
-        });
+        const opensLeft = cursor.getTime() === arrival.getTime();
+        const closesRight = segmentEnd.getTime() === departure.getTime();
+
+        // Half-column numbers, 1..14 across a week.
+        const startHalf = cursor.getDay() * 2 + (opensLeft ? 2 : 1);
+        const endHalf = segmentEnd.getDay() * 2 + (closesRight ? 1 : 2);
+
+        if (endHalf >= startHalf) {
+          segments.push({
+            booking,
+            row: Math.floor(Math.round((cursor - gridStart) / DAY_MS) / 7),
+            startHalf,
+            span: endHalf - startHalf + 1,
+            opensLeft,
+            closesRight,
+            // The name goes on the piece that starts the stay, or on the piece that
+            // starts a later week, so a long stay stays identifiable on every row.
+            labelled: opensLeft || cursor.getDay() === 0,
+          });
+        }
         cursor = addDays(segmentEnd, 1);
       }
     });
 
     return segments
-      .sort((a, b) => a.row - b.row || a.column - b.column || a.span - b.span)
+      .sort((a, b) => a.row - b.row || a.startHalf - b.startHalf || a.span - b.span)
       .map((segment) => ({ ...segment, lane: assignLane(segments, segment) }))
       .filter((segment) => segment.lane < MAX_BOOKING_LANES)
       .map((segment) => {
@@ -1491,10 +1501,10 @@
         return `
           <span
             class="${shape}"
-            style="grid-row: ${segment.row + 1}; grid-column: ${segment.column + 1} / span ${segment.span}; --lane: ${segment.lane}"
+            style="grid-row: ${segment.row + 1}; grid-column: ${segment.startHalf} / span ${segment.span}; --lane: ${segment.lane}"
             title="${escapeAttr(`${segment.booking.guestName} - ${source.label}`)}"
           >
-            <span class="booking-bar-name">${escapeHtml(label)}</span>
+            ${segment.labelled ? `<span class="booking-bar-name">${escapeHtml(label)}</span>` : ""}
           </span>
         `;
       })
@@ -1510,8 +1520,8 @@
       const clash = placed.some(
         (other) =>
           other.lane === lane &&
-          other.column < segment.column + segment.span &&
-          segment.column < other.column + other.span,
+          other.startHalf < segment.startHalf + segment.span &&
+          segment.startHalf < other.startHalf + other.span,
       );
       if (!clash) {
         segment.lane = lane;

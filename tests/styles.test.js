@@ -58,6 +58,36 @@ module.exports = async function run() {
     return `toast ${toast.value} > modal ${modal.value}`;
   });
 
+  await test("the bar overlay is laid out exactly like the day grid", () => {
+    // Bars are positioned by grid line, so any difference in column count or gap
+    // between the two grids slides every bar off its day.
+    const columns = rulesFor("grid-template-columns");
+    const grid = columns.find((rule) => /^\.month-grid\b/.test(rule.selector));
+    const overlay = columns.find((rule) => /^\.booking-overlay\b/.test(rule.selector));
+    assert(grid && overlay, "missing a grid-template-columns rule");
+    assert(grid.value === overlay.value, `grid ${grid.value} vs overlay ${overlay.value}`);
+
+    const gaps = rulesFor("column-gap");
+    const gridGap = gaps.find((rule) => /^\.month-grid\b/.test(rule.selector));
+    const overlayGap = gaps.find((rule) => /^\.booking-overlay\b/.test(rule.selector));
+    assert(gridGap && overlayGap, "missing a column-gap rule");
+    assert(gridGap.value === overlayGap.value, `grid ${gridGap.value} vs overlay ${overlayGap.value}`);
+
+    const rowGaps = rulesFor("row-gap");
+    const gridRow = rowGaps.find((rule) => /^\.month-grid\b/.test(rule.selector));
+    const overlayRow = rowGaps.find((rule) => /^\.booking-overlay\b/.test(rule.selector));
+    assert(gridRow.value === overlayRow.value, `grid ${gridRow.value} vs overlay ${overlayRow.value}`);
+    return `${grid.value}, gap ${gridGap.value}/${gridRow.value}`;
+  });
+
+  await test("the weekday header does not take a day row's height", () => {
+    // Sharing grid-auto-rows with .month-grid left a tall empty band under the
+    // weekday labels.
+    const autoRows = rulesFor("grid-auto-rows");
+    const offender = autoRows.find((rule) => /\.weekday-row\b/.test(rule.selector));
+    assert(!offender, `${offender && offender.selector} sets grid-auto-rows`);
+  });
+
   await test("popups follow the visual viewport", () => {
     const heights = rulesFor("height").filter((rule) => /\.form-modal\b/.test(rule.selector));
     assert(

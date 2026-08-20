@@ -137,15 +137,58 @@ module.exports = async function run() {
     return `${bars.length} bars, each one span with a name`;
   });
 
-  await test("a stay covers the nights slept, leaving the checkout day free", () => {
-    // Ravi is day(-1) to day(2): two nights on the grid, so one bar spanning them.
-    const bars = $$("#monthGrid .booking-overlay .booking-bar").filter((bar) =>
-      /Ravi/.test(bar.textContent),
-    );
-    assert(bars.length === 1, `${bars.length} bars for one stay`);
-    const span = Number(bars[0].getAttribute("style").match(/span (\d+)/)[1]);
-    assert(span === 3, `spans ${span} cells, expected 3 nights`);
-    return `one bar spanning ${span} nights`;
+  await test("a stay runs from midday of arrival to midday of departure", () => {
+    // A three night stay inside one week: half of the arrival day, two whole days,
+    // half of the departure day = 6 half columns.
+    const single = startApp({
+      lang: "en",
+      bookings: [{
+        id: "mid", guestName: "Midday Guest", phone: "", platform: "airbnb",
+        checkIn: "2026-08-17", checkOut: "2026-08-20", checkInTime: "14:00",
+        checkoutTime: "11:00", adults: 1, children: 0, pets: 0,
+        status: "confirmed", idProof: "pending", villaRoom: "Willow Villa",
+      }],
+    });
+    // 17 Aug 2026 is a Monday: day index 1, so half columns 4..9.
+    const bar = single.$$("#monthGrid .booking-bar").find((b) => /Midday/.test(b.textContent));
+    assert(bar, "no bar drawn");
+    const style = bar.getAttribute("style");
+    const [, start, span] = style.match(/grid-column:\s*(\d+)\s*\/\s*span\s*(\d+)/);
+    assert(Number(start) === 4, `starts at half column ${start}, expected 4`);
+    assert(Number(span) === 6, `spans ${span} half columns, expected 6`);
+    assert(bar.classList.contains("opens") && bar.classList.contains("closes"), bar.className);
+    single.close();
+    return `half columns ${start}..${Number(start) + Number(span) - 1}`;
+  });
+
+  await test("a turnover day carries the departing and arriving halves", () => {
+    const turnover = startApp({
+      lang: "en",
+      bookings: [
+        { id: "out", guestName: "Leaves Wed", phone: "", platform: "airbnb",
+          checkIn: "2026-08-17", checkOut: "2026-08-19", checkInTime: "14:00",
+          checkoutTime: "11:00", adults: 1, children: 0, pets: 0,
+          status: "confirmed", idProof: "pending", villaRoom: "Willow Villa" },
+        { id: "in", guestName: "Arrives Wed", phone: "", platform: "direct",
+          checkIn: "2026-08-19", checkOut: "2026-08-21", checkInTime: "14:00",
+          checkoutTime: "11:00", adults: 1, children: 0, pets: 0,
+          status: "confirmed", idProof: "pending", villaRoom: "Willow Villa" },
+      ],
+    });
+    const bars = turnover.$$("#monthGrid .booking-bar");
+    const spans = bars.map((bar) => {
+      const [, start, span] = bar.getAttribute("style").match(/grid-column:\s*(\d+)\s*\/\s*span\s*(\d+)/);
+      return { start: Number(start), end: Number(start) + Number(span) - 1, lane: bar.getAttribute("style").match(/--lane: (\d+)/)[1] };
+    });
+    // Wed 19 Aug is day index 3: its halves are 7 and 8. One stay ends at 7,
+    // the next begins at 8, so they meet without overlapping.
+    const leaving = spans.find((s) => s.start === 4);
+    const arriving = spans.find((s) => s.start === 8);
+    assert(leaving && leaving.end === 7, `departing bar ends at ${leaving && leaving.end}, expected 7`);
+    assert(arriving && arriving.start === 8, "arriving bar does not start at the second half of the day");
+    assert(spans.every((s) => s.lane === "0"), "they were stacked despite not overlapping");
+    turnover.close();
+    return `leaves ends ${leaving.end}, arrives starts ${arriving.start}`;
   });
 
   await test("a stay running into the next week is named again on the Sunday", () => {
