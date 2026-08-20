@@ -31,6 +31,7 @@ html {
 }
 
 body {
+  overflow-x: hidden;
   min-width: 320px;
   margin: 0;
   background:
@@ -61,21 +62,21 @@ img {
 }
 
 .site-shell {
-  width: min(980px, 100%);
+  width: 100%;
+  max-width: 980px;
+  overflow-x: hidden;
   margin: 0 auto;
-  padding: 10px 10px 34px;
+  padding: 8px 8px 34px;
 }
 
 .site-header {
   position: sticky;
   top: 0;
   z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 68px;
-  padding: 8px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 7px 0 9px;
   background: color-mix(in srgb, var(--bg) 90%, transparent);
   backdrop-filter: blur(18px);
 }
@@ -89,9 +90,9 @@ img {
 }
 
 .brand img {
-  width: 48px;
-  height: 48px;
-  flex: 0 0 48px;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
   object-fit: contain;
   border: 1px solid rgba(20, 93, 59, 0.24);
   border-radius: var(--radius);
@@ -107,7 +108,7 @@ img {
 
 .brand strong {
   overflow: hidden;
-  font-size: 1rem;
+  font-size: 0.98rem;
   line-height: 1.05;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -129,8 +130,10 @@ img {
 }
 
 .header-actions {
-  gap: 8px;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
 }
 
 .ghost-button,
@@ -159,6 +162,15 @@ img {
   justify-content: center;
   gap: 8px;
   padding: 0 12px;
+}
+
+.header-actions .ghost-button,
+.header-actions .primary-button,
+.header-actions .language-toggle {
+  width: 100%;
+  min-width: 0;
+  padding: 0 8px;
+  font-size: 0.92rem;
 }
 
 .ghost-button {
@@ -225,7 +237,7 @@ svg {
 
 .visual-band {
   position: relative;
-  min-height: 164px;
+  min-height: 126px;
   overflow: hidden;
   border: 1px solid rgba(20, 33, 27, 0.12);
   border-radius: var(--radius);
@@ -239,7 +251,7 @@ svg {
   z-index: 1;
   content: "";
   background:
-    linear-gradient(90deg, rgba(8, 16, 12, 0.72), rgba(8, 16, 12, 0.2)),
+    linear-gradient(90deg, rgba(8, 16, 12, 0.68), rgba(8, 16, 12, 0.16)),
     linear-gradient(0deg, rgba(8, 16, 12, 0.36), transparent 62%);
 }
 
@@ -256,8 +268,8 @@ svg {
   z-index: 2;
   display: grid;
   align-content: end;
-  min-height: 164px;
-  padding: 18px;
+  min-height: 126px;
+  padding: 14px;
   color: #fff;
 }
 
@@ -279,8 +291,28 @@ svg {
 .visual-copy h1 {
   width: min(12ch, 100%);
   margin: 0;
-  font-size: clamp(2.15rem, 12vw, 4.2rem);
-  line-height: 0.96;
+  overflow-wrap: anywhere;
+  font-size: clamp(1.75rem, 8.8vw, 2.7rem);
+  line-height: 1;
+}
+
+.photo-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(86px, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.photo-strip img {
+  width: 100%;
+  min-width: 86px;
+  aspect-ratio: 1.35;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--soft-shadow);
 }
 
 .calendar-card,
@@ -295,7 +327,8 @@ svg {
 }
 
 .calendar-card {
-  padding: 12px;
+  overflow: hidden;
+  padding: 9px;
 }
 
 .calendar-header {
@@ -316,8 +349,8 @@ svg {
 
 .legend {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
   margin: 12px 0;
 }
 
@@ -374,7 +407,7 @@ svg {
 }
 
 .weekday-row {
-  gap: 4px;
+  gap: 3px;
   margin: 8px 0 5px;
 }
 
@@ -386,7 +419,7 @@ svg {
 }
 
 .month-grid {
-  gap: 4px;
+  gap: 3px;
 }
 
 .day-cell {
@@ -394,8 +427,8 @@ svg {
   display: grid;
   grid-template-rows: auto 1fr auto;
   min-width: 0;
-  min-height: clamp(66px, 15vw, 108px);
-  padding: 6px;
+  min-height: clamp(58px, 14vw, 92px);
+  padding: 5px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #fff;
@@ -614,6 +647,24 @@ svg {
   cursor: pointer;
 }
 
+.advanced-fields {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcfa;
+}
+
+.advanced-fields summary {
+  min-height: 46px;
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.advanced-fields .form-grid {
+  padding: 0 12px 12px;
+}
+
 .import-card summary::-webkit-details-marker,
 .entry-card summary::-webkit-details-marker {
   display: none;
@@ -744,9 +795,38 @@ textarea:focus {
   }
 }
 
+@media (min-width: 480px) and (max-width: 719px) {
+  .legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (min-width: 720px) {
   .site-shell {
     padding: 18px 18px 46px;
+  }
+
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 72px;
+    padding: 8px 0;
+  }
+
+  .header-actions {
+    display: flex;
+    width: auto;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .header-actions .ghost-button,
+  .header-actions .primary-button,
+  .header-actions .language-toggle {
+    width: auto;
+    padding: 0 12px;
   }
 
   .brand img {
@@ -766,6 +846,11 @@ textarea:focus {
 
   .visual-copy {
     padding: 28px;
+  }
+
+  .visual-copy h1 {
+    font-size: clamp(2.4rem, 7vw, 4.2rem);
+    line-height: 0.96;
   }
 
   .legend {

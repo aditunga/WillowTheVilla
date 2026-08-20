@@ -9,7 +9,7 @@
       content="Telugu-first Willow The Villa booking calendar for caretakers."
     />
     <link rel="preload" href="assets/logo.png" as="image" />
-    <link rel="preload" href="assets/villa-hero.png" as="image" />
+    <link rel="preload" href="assets/listing/willow-1.jpeg" as="image" />
     <link rel="icon" href="assets/logo.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -57,6 +57,10 @@
         </a>
 
         <div class="header-actions">
+          <button class="primary-button quick-add-button" id="quickAddButton" type="button">
+            <svg><use href="#icon-plus"></use></svg>
+            <span data-i18n="quickAdd">జోడించు</span>
+          </button>
           <button class="ghost-button" id="exportButton" type="button">
             <svg><use href="#icon-download"></use></svg>
             <span>CSV</span>
@@ -67,11 +71,18 @@
 
       <main>
         <section class="visual-band" aria-label="Willow The Villa">
-          <img src="assets/villa-hero.png" alt="" />
+          <img src="assets/listing/willow-1.jpeg" alt="Willow The Villa exterior" />
           <div class="visual-copy">
             <p data-i18n="combined">Airbnb, Booking.com, MakeMyTrip</p>
             <h1 data-i18n="title">ఒకే క్యాలెండర్‌లో అన్ని బుకింగ్‌లు</h1>
           </div>
+        </section>
+
+        <section class="photo-strip" aria-label="Willow The Villa photos">
+          <img src="assets/listing/willow-2.jpeg" alt="Willow The Villa lawn view" />
+          <img src="assets/listing/willow-3.jpeg" alt="Willow The Villa living room" />
+          <img src="assets/listing/willow-4.jpeg" alt="Willow The Villa balcony view" />
+          <img src="assets/listing/willow-5.jpeg" alt="Willow The Villa patio" />
         </section>
 
         <section class="calendar-card" aria-labelledby="calendarTitle">
@@ -100,6 +111,97 @@
             </button>
           </div>
         </section>
+
+        <details class="entry-card" id="entryCard" open>
+          <summary>
+            <span data-i18n="addEditBooking">త్వరగా బుకింగ్ జోడించు</span>
+            <svg><use href="#icon-plus"></use></svg>
+          </summary>
+
+          <form id="bookingForm">
+            <input type="hidden" id="bookingInternalId" />
+            <div class="form-grid">
+              <label>
+                <span data-i18n="guestName">అతిథి పేరు</span>
+                <input id="guestName" name="guestName" autocomplete="name" required />
+              </label>
+              <label>
+                <span data-i18n="phone">ఫోన్ నంబర్</span>
+                <input id="phone" name="phone" inputmode="tel" autocomplete="tel" required />
+              </label>
+              <label>
+                <span data-i18n="platform">ఎక్కడ బుక్ అయింది</span>
+                <select id="platform" name="platform" required></select>
+              </label>
+              <label>
+                <span data-i18n="checkIn">చెక్-ఇన్</span>
+                <input id="checkIn" name="checkIn" type="date" required />
+              </label>
+              <label>
+                <span data-i18n="checkOut">చెక్-అవుట్</span>
+                <input id="checkOut" name="checkOut" type="date" required />
+              </label>
+              <label>
+                <span data-i18n="adults">పెద్దలు</span>
+                <input id="adults" name="adults" type="number" min="1" value="2" required />
+              </label>
+              <label>
+                <span data-i18n="children">పిల్లలు</span>
+                <input id="children" name="children" type="number" min="0" value="0" />
+              </label>
+              <label class="full">
+                <span data-i18n="notes">కేర్‌టేకర్ నోట్లు</span>
+                <textarea id="notes" name="notes" rows="3"></textarea>
+              </label>
+            </div>
+
+            <details class="advanced-fields">
+              <summary data-i18n="advancedDetails">మరిన్ని వివరాలు</summary>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="bookingId">బుకింగ్ ఐడి</span>
+                  <input id="bookingId" name="bookingId" />
+                </label>
+                <label>
+                  <span data-i18n="arrivalTime">రాక సమయం</span>
+                  <input id="arrivalTime" name="arrivalTime" type="time" />
+                </label>
+                <label>
+                  <span data-i18n="villaRoom">విల్లా/గది</span>
+                  <input id="villaRoom" name="villaRoom" value="Willow Villa" />
+                </label>
+                <label>
+                  <span data-i18n="status">స్థితి</span>
+                  <select id="bookingStatus" name="bookingStatus" required></select>
+                </label>
+                <label>
+                  <span data-i18n="idProof">ఐడీ ప్రూఫ్</span>
+                  <select id="idProof" name="idProof" required></select>
+                </label>
+                <label>
+                  <span data-i18n="email">ఈమెయిల్</span>
+                  <input id="email" name="email" type="email" autocomplete="email" />
+                </label>
+                <label>
+                  <span data-i18n="vehicle">వాహనం నంబర్</span>
+                  <input id="vehicle" name="vehicle" />
+                </label>
+                <label class="full">
+                  <span data-i18n="requests">అభ్యర్థనలు</span>
+                  <textarea id="requests" name="requests" rows="3"></textarea>
+                </label>
+              </div>
+            </details>
+
+            <div class="form-actions">
+              <button class="primary-button" type="submit">
+                <svg><use href="#icon-plus"></use></svg>
+                <span data-i18n="saveBooking">సేవ్</span>
+              </button>
+              <button class="ghost-button" id="resetButton" type="button" data-i18n="clearForm">క్లియర్</button>
+            </div>
+          </form>
+        </details>
 
         <section class="selected-card" aria-labelledby="selectedTitle">
           <div class="section-title">
@@ -133,91 +235,6 @@
             <svg><use href="#icon-upload"></use></svg>
             <span data-i18n="importBookings">బుకింగ్‌లు ఇంపోర్ట్ చేయి</span>
           </button>
-        </details>
-
-        <details class="entry-card" id="entryCard">
-          <summary>
-            <span data-i18n="addEditBooking">బుకింగ్ జోడించు / సవరించు</span>
-            <svg><use href="#icon-plus"></use></svg>
-          </summary>
-
-          <form id="bookingForm">
-            <input type="hidden" id="bookingInternalId" />
-            <div class="form-grid">
-              <label>
-                <span data-i18n="guestName">అతిథి పేరు</span>
-                <input id="guestName" name="guestName" autocomplete="name" required />
-              </label>
-              <label>
-                <span data-i18n="phone">ఫోన్ నంబర్</span>
-                <input id="phone" name="phone" inputmode="tel" autocomplete="tel" required />
-              </label>
-              <label>
-                <span data-i18n="platform">ఎక్కడ బుక్ అయింది</span>
-                <select id="platform" name="platform" required></select>
-              </label>
-              <label>
-                <span data-i18n="bookingId">బుకింగ్ ఐడి</span>
-                <input id="bookingId" name="bookingId" />
-              </label>
-              <label>
-                <span data-i18n="checkIn">చెక్-ఇన్</span>
-                <input id="checkIn" name="checkIn" type="date" required />
-              </label>
-              <label>
-                <span data-i18n="checkOut">చెక్-అవుట్</span>
-                <input id="checkOut" name="checkOut" type="date" required />
-              </label>
-              <label>
-                <span data-i18n="arrivalTime">రాక సమయం</span>
-                <input id="arrivalTime" name="arrivalTime" type="time" />
-              </label>
-              <label>
-                <span data-i18n="villaRoom">విల్లా/గది</span>
-                <input id="villaRoom" name="villaRoom" value="Willow Villa" />
-              </label>
-              <label>
-                <span data-i18n="adults">పెద్దలు</span>
-                <input id="adults" name="adults" type="number" min="1" value="2" required />
-              </label>
-              <label>
-                <span data-i18n="children">పిల్లలు</span>
-                <input id="children" name="children" type="number" min="0" value="0" />
-              </label>
-              <label>
-                <span data-i18n="status">స్థితి</span>
-                <select id="bookingStatus" name="bookingStatus" required></select>
-              </label>
-              <label>
-                <span data-i18n="idProof">ఐడీ ప్రూఫ్</span>
-                <select id="idProof" name="idProof" required></select>
-              </label>
-              <label>
-                <span data-i18n="email">ఈమెయిల్</span>
-                <input id="email" name="email" type="email" autocomplete="email" />
-              </label>
-              <label>
-                <span data-i18n="vehicle">వాహనం నంబర్</span>
-                <input id="vehicle" name="vehicle" />
-              </label>
-              <label class="full">
-                <span data-i18n="requests">అభ్యర్థనలు</span>
-                <textarea id="requests" name="requests" rows="3"></textarea>
-              </label>
-              <label class="full">
-                <span data-i18n="notes">కేర్‌టేకర్ నోట్లు</span>
-                <textarea id="notes" name="notes" rows="3"></textarea>
-              </label>
-            </div>
-
-            <div class="form-actions">
-              <button class="primary-button" type="submit">
-                <svg><use href="#icon-plus"></use></svg>
-                <span data-i18n="saveBooking">సేవ్</span>
-              </button>
-              <button class="ghost-button" id="resetButton" type="button" data-i18n="clearForm">క్లియర్</button>
-            </div>
-          </form>
         </details>
       </main>
     </div>

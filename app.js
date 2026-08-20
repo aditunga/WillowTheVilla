@@ -31,7 +31,8 @@
 
   const COPY = {
     te: {
-      addEditBooking: "బుకింగ్ జోడించు / సవరించు",
+      addEditBooking: "త్వరగా బుకింగ్ జోడించు",
+      advancedDetails: "మరిన్ని వివరాలు",
       adults: "పెద్దలు",
       airbnb: "Airbnb",
       arrivalTime: "రాక సమయం",
@@ -73,6 +74,7 @@
       noValue: "లేదు",
       phone: "ఫోన్ నంబర్",
       platform: "ఎక్కడ బుక్ అయింది",
+      quickAdd: "జోడించు",
       requests: "అభ్యర్థనలు",
       saveBooking: "సేవ్",
       saved: "బుకింగ్ సేవ్ అయింది",
@@ -86,7 +88,8 @@
       whatsapp: "వాట్సాప్",
     },
     en: {
-      addEditBooking: "Add / Edit Booking",
+      addEditBooking: "Quick add booking",
+      advancedDetails: "More details",
       adults: "Adults",
       airbnb: "Airbnb",
       arrivalTime: "Arrival time",
@@ -128,6 +131,7 @@
       noValue: "None",
       phone: "Phone number",
       platform: "Booked through",
+      quickAdd: "Add",
       requests: "Requests",
       saveBooking: "Save",
       saved: "Booking saved",
@@ -166,6 +170,7 @@
     nextMonth: document.getElementById("nextMonth"),
     platform: document.getElementById("platform"),
     prevMonth: document.getElementById("prevMonth"),
+    quickAddButton: document.getElementById("quickAddButton"),
     resetButton: document.getElementById("resetButton"),
     selectedBookings: document.getElementById("selectedBookings"),
     selectedCount: document.getElementById("selectedCount"),
@@ -281,6 +286,12 @@
     els.resetButton.addEventListener("click", resetForm);
     els.exportButton.addEventListener("click", exportCsv);
     els.importButton.addEventListener("click", importSelectedFile);
+    els.quickAddButton.addEventListener("click", () => {
+      resetForm();
+      els.entryCard.open = true;
+      els.entryCard.scrollIntoView({ block: "start" });
+      document.getElementById("guestName").focus({ preventScroll: true });
+    });
   }
 
   function render() {
