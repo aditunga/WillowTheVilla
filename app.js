@@ -86,6 +86,7 @@
       passcodeWrong: "కోడ్ తప్పు",
       pets: "పెంపుడు జంతువులు",
       phone: "ఫోన్ నంబర్",
+      phonePending: "ఫోన్ నంబర్ అప్డేట్ చేయాలి",
       platform: "ఎక్కడ బుక్ అయింది",
       quickAdd: "జోడించు",
       requests: "అభ్యర్థనలు",
@@ -154,6 +155,7 @@
       passcodeWrong: "Wrong code",
       pets: "Pets",
       phone: "Phone number",
+      phonePending: "Phone number to be updated",
       platform: "Booked through",
       quickAdd: "Add",
       requests: "Requests",
@@ -525,6 +527,18 @@
     const phone = booking.phone || "";
     const callHref = `tel:${phone.replace(/[^\d+]/g, "")}`;
     const whatsappHref = whatsappUrl(phone);
+    const contactActions = phone
+      ? `
+          <a class="contact-link" href="${escapeAttr(callHref)}">
+            <svg><use href="#icon-phone"></use></svg>
+            <span>${escapeHtml(t("call"))}</span>
+          </a>
+          <a class="contact-link" href="${escapeAttr(whatsappHref)}" target="_blank" rel="noreferrer">
+            <svg><use href="#icon-message"></use></svg>
+            <span>${escapeHtml(t("whatsapp"))}</span>
+          </a>
+        `
+      : `<span class="contact-missing">${escapeHtml(t("phonePending"))}</span>`;
     const guestCount = `${booking.adults || 0} ${t("adults")}, ${booking.children || 0} ${t("children")}, ${booking.pets || 0} ${t("pets")}`;
     const dateText = `${formatShortDate(booking.checkIn)} ${t("checkInAt")} - ${formatShortDate(booking.checkOut)} ${t("checkOutAt")} (${nights(booking)} ${t("nights")})`;
     const notes = noteForDisplay(booking.notes);
@@ -540,7 +554,7 @@
         <div class="guest-top">
           <div class="guest-name">
             <h3>${escapeHtml(booking.guestName)}</h3>
-            <p>${escapeHtml(phone)}</p>
+            <p class="${phone ? "" : "missing-phone"}">${escapeHtml(phone || t("phonePending"))}</p>
           </div>
           <span class="source-chip ${source.className}">${escapeHtml(source.label)}</span>
         </div>
@@ -557,14 +571,7 @@
         </div>
 
         <div class="booking-actions">
-          <a class="contact-link" href="${escapeAttr(callHref)}">
-            <svg><use href="#icon-phone"></use></svg>
-            <span>${escapeHtml(t("call"))}</span>
-          </a>
-          <a class="contact-link" href="${escapeAttr(whatsappHref)}" target="_blank" rel="noreferrer">
-            <svg><use href="#icon-message"></use></svg>
-            <span>${escapeHtml(t("whatsapp"))}</span>
-          </a>
+          ${contactActions}
           <button class="ghost-button" type="button" data-action="edit" data-id="${escapeAttr(booking.id)}">
             <svg><use href="#icon-edit"></use></svg>
             <span>${escapeHtml(t("edit"))}</span>
