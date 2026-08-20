@@ -45,7 +45,9 @@
       cancelled: "రద్దు అయింది",
       caretaker: "సంరక్షకుల క్యాలెండర్",
       checkIn: "చెక్-ఇన్",
+      checkInAt: "2 PM నుండి",
       checkOut: "చెక్-అవుట్",
+      checkOutAt: "11 AM వరకు",
       children: "పిల్లలు",
       clearForm: "క్లియర్",
       clearSelection: "సెలెక్షన్ క్లియర్",
@@ -74,12 +76,15 @@
       notes: "కేర్‌టేకర్ నోట్లు",
       nights: "రాత్రులు",
       noValue: "లేదు",
+      noteTeluguPreview: "తెలుగు నోట్",
+      originalNote: "అసలు",
       passcodeCancel: "రద్దు",
       passcodeConfirm: "సేవ్",
       passcodeHelp: "కొత్త బుకింగ్ సేవ్ చేయడానికి 4 అంకెల కోడ్ ఇవ్వండి.",
       passcodeLabel: "4 అంకెల కోడ్",
       passcodeTitle: "బుకింగ్ కోడ్",
       passcodeWrong: "కోడ్ తప్పు",
+      pets: "పెంపుడు జంతువులు",
       phone: "ఫోన్ నంబర్",
       platform: "ఎక్కడ బుక్ అయింది",
       quickAdd: "జోడించు",
@@ -108,7 +113,9 @@
       cancelled: "Cancelled",
       caretaker: "Caretaker calendar",
       checkIn: "Check-in",
+      checkInAt: "from 2 PM",
       checkOut: "Check-out",
+      checkOutAt: "until 11 AM",
       children: "Children",
       clearForm: "Clear",
       clearSelection: "Clear selection",
@@ -137,12 +144,15 @@
       notes: "Caretaker notes",
       nights: "nights",
       noValue: "None",
+      noteTeluguPreview: "Telugu note",
+      originalNote: "Original",
       passcodeCancel: "Cancel",
       passcodeConfirm: "Save",
       passcodeHelp: "Enter the 4-digit code to save a new booking.",
       passcodeLabel: "4-digit code",
       passcodeTitle: "Booking code",
       passcodeWrong: "Wrong code",
+      pets: "Pets",
       phone: "Phone number",
       platform: "Booked through",
       quickAdd: "Add",
@@ -182,6 +192,8 @@
     languageToggle: document.getElementById("languageToggle"),
     monthGrid: document.getElementById("monthGrid"),
     nextMonth: document.getElementById("nextMonth"),
+    notePreview: document.getElementById("notePreview"),
+    notes: document.getElementById("notes"),
     passcodeCancel: document.getElementById("passcodeCancel"),
     passcodeError: document.getElementById("passcodeError"),
     passcodeForm: document.getElementById("passcodeForm"),
@@ -311,6 +323,7 @@
     els.resetButton.addEventListener("click", resetForm);
     els.exportButton.addEventListener("click", exportCsv);
     els.importButton.addEventListener("click", importSelectedFile);
+    els.notes.addEventListener("input", renderNotePreview);
     els.passcodeCancel.addEventListener("click", () => closePasscode(false));
     els.passcodeForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -370,6 +383,17 @@
       element.textContent = t(element.dataset.i18n);
     });
     els.languageToggle.textContent = state.lang === "te" ? "English" : "తెలుగు";
+    renderNotePreview();
+  }
+
+  function renderNotePreview() {
+    const note = clean(els.notes.value);
+    const translated = translateCaretakerNote(note);
+    const shouldShow = note && translated && translated !== note;
+    els.notePreview.hidden = !shouldShow;
+    els.notePreview.textContent = shouldShow
+      ? `${t("noteTeluguPreview")}: ${translated}`
+      : "";
   }
 
   function renderLegend() {
@@ -404,17 +428,14 @@
       const date = addDays(gridStart, index);
       const iso = toISO(date);
       const bookings = bookingsForDate(iso);
-      const sourceIds = [...new Set(bookings.map((booking) => booking.platform))];
-      const sourceBars = sourceIds
-        .slice(0, 4)
-        .map((sourceId) => {
-          const source = getSource(sourceId);
-          return `<span class="source-bar ${source.className}"></span>`;
-        })
+      const bookingPills = bookings
+        .sort((a, b) => segmentOrder(a, iso) - segmentOrder(b, iso))
+        .slice(0, 3)
+        .map((booking) => renderCalendarBooking(booking, iso))
         .join("");
       const more =
-        bookings.length > 4
-          ? `<span class="more-count">+${bookings.length - 4}</span>`
+        bookings.length > 3
+          ? `<span class="more-count">+${bookings.length - 3}</span>`
           : "";
       const classes = [
         "day-cell",
@@ -429,11 +450,39 @@
       return `
         <button class="${classes}" type="button" data-date="${iso}" aria-label="${escapeHtml(ariaLabel)}">
           <span class="day-number">${date.getDate()}</span>
-          <span></span>
-          <span class="booking-stack">${sourceBars}${more}</span>
+          <span class="booking-stack">${bookingPills}${more}</span>
         </button>
       `;
     }).join("");
+  }
+
+  function renderCalendarBooking(booking, isoDate) {
+    const source = getSource(booking.platform);
+    const segment = bookingSegment(booking, isoDate);
+    const guest = firstName(booking.guestName) || source.label;
+    const time = segment === "start" ? "2PM" : segment === "end" ? "11AM" : "";
+
+    return `
+      <span
+        class="booking-pill ${source.className} ${segment}"
+        title="${escapeAttr(`${booking.guestName} - ${source.label}`)}"
+      >
+        ${time ? `<small>${time}</small>` : ""}
+        <span>${escapeHtml(guest)}</span>
+      </span>
+    `;
+  }
+
+  function bookingSegment(booking, isoDate) {
+    if (booking.checkIn === isoDate && booking.checkOut === isoDate) return "same-day";
+    if (booking.checkIn === isoDate) return "start";
+    if (booking.checkOut === isoDate) return "end";
+    return "middle";
+  }
+
+  function segmentOrder(booking, isoDate) {
+    const segment = bookingSegment(booking, isoDate);
+    return { end: 0, middle: 1, "same-day": 1, start: 2 }[segment] ?? 1;
   }
 
   function renderSelectedDate() {
@@ -476,13 +525,14 @@
     const phone = booking.phone || "";
     const callHref = `tel:${phone.replace(/[^\d+]/g, "")}`;
     const whatsappHref = whatsappUrl(phone);
-    const guestCount = `${booking.adults || 0} ${t("adults")}, ${booking.children || 0} ${t("children")}`;
-    const dateText = `${formatShortDate(booking.checkIn)} - ${formatShortDate(booking.checkOut)} (${nights(booking)} ${t("nights")})`;
+    const guestCount = `${booking.adults || 0} ${t("adults")}, ${booking.children || 0} ${t("children")}, ${booking.pets || 0} ${t("pets")}`;
+    const dateText = `${formatShortDate(booking.checkIn)} ${t("checkInAt")} - ${formatShortDate(booking.checkOut)} ${t("checkOutAt")} (${nights(booking)} ${t("nights")})`;
+    const notes = noteForDisplay(booking.notes);
     const optionalDetails = [
       detail(t("email"), booking.email),
       detail(t("vehicle"), booking.vehicle),
       detail(t("requests"), booking.requests, true),
-      detail(t("notes"), booking.notes, true),
+      detail(t("notes"), notes, true),
     ].join("");
 
     return `
@@ -538,6 +588,113 @@
     `;
   }
 
+  function noteForDisplay(note) {
+    const original = clean(note);
+    if (!original) return "";
+    if (state.lang !== "te") return original;
+
+    const translated = translateCaretakerNote(original);
+    if (translated === original) return original;
+
+    return `${translated}\n${t("originalNote")}: ${original}`;
+  }
+
+  function translateCaretakerNote(note) {
+    const original = clean(note);
+    if (!/[a-z]/i.test(original)) return original;
+
+    let translated = original;
+    const phraseMap = [
+      ["call before arrival", "రాకముందు కాల్ చేయండి"],
+      ["call guest", "అతిథికి కాల్ చేయండి"],
+      ["late check out", "ఆలస్యంగా చెక్-అవుట్"],
+      ["late checkout", "ఆలస్యంగా చెక్-అవుట్"],
+      ["early check out", "ముందుగా చెక్-అవుట్"],
+      ["early checkout", "ముందుగా చెక్-అవుట్"],
+      ["late check in", "ఆలస్యంగా చెక్-ఇన్"],
+      ["late check-in", "ఆలస్యంగా చెక్-ఇన్"],
+      ["early check in", "ముందుగా చెక్-ఇన్"],
+      ["early check-in", "ముందుగా చెక్-ఇన్"],
+      ["id pending", "ఐడీ మిగిలింది"],
+      ["collect id", "ఐడీ తీసుకోండి"],
+      ["need extra towels", "అదనపు తువ్వాళ్లు కావాలి"],
+      ["extra towels", "అదనపు తువ్వాళ్లు"],
+      ["need towels", "తువ్వాళ్లు కావాలి"],
+      ["room cleaning", "గది శుభ్రం"],
+      ["clean room", "గది శుభ్రం చేయండి"],
+      ["baby cot", "బేబీ కాట్"],
+      ["water bottles", "నీళ్ల బాటిళ్లు"],
+      ["water bottle", "నీళ్ల బాటిల్"],
+      ["airport pickup", "ఎయిర్‌పోర్ట్ పికప్"],
+      ["railway station", "రైల్వే స్టేషన్"],
+    ];
+
+    phraseMap.forEach(([english, telugu]) => {
+      const pattern = escapeRegExp(english).replace(/\s+/g, "\\s+");
+      translated = translated.replace(new RegExp(`\\b${pattern}\\b`, "gi"), telugu);
+    });
+
+    const wordMap = {
+      add: "జోడించండి",
+      afternoon: "మధ్యాహ్నం",
+      and: "మరియు",
+      arrive: "వస్తారు",
+      arrival: "రాక",
+      bed: "పడక",
+      beds: "పడకలు",
+      breakfast: "అల్పాహారం",
+      bring: "తీసుకురండి",
+      car: "కారు",
+      cat: "పిల్లి",
+      cats: "పిల్లులు",
+      checkin: "చెక్-ఇన్",
+      checkout: "చెక్-అవుట్",
+      clean: "శుభ్రం",
+      coming: "వస్తున్నారు",
+      dinner: "రాత్రి భోజనం",
+      dog: "కుక్క",
+      dogs: "కుక్కలు",
+      driver: "డ్రైవర్",
+      early: "ముందుగా",
+      evening: "సాయంత్రం",
+      extra: "అదనపు",
+      food: "భోజనం",
+      guest: "అతిథి",
+      guests: "అతిథులు",
+      id: "ఐడీ",
+      key: "తాళం చెవి",
+      late: "ఆలస్యంగా",
+      lunch: "మధ్యాహ్న భోజనం",
+      morning: "ఉదయం",
+      need: "కావాలి",
+      needs: "కావాలి",
+      night: "రాత్రి",
+      nonveg: "నాన్ వెజ్",
+      parking: "పార్కింగ్",
+      pet: "పెంపుడు జంతువు",
+      pets: "పెంపుడు జంతువులు",
+      pickup: "పికప్",
+      please: "దయచేసి",
+      room: "గది",
+      towels: "తువ్వాళ్లు",
+      veg: "వెజ్",
+      water: "నీళ్లు",
+      with: "తో",
+    };
+
+    translated = translated.replace(/\b[a-z][a-z-]*\b/g, (word) => {
+      const key = word.replace(/-/g, "");
+      return wordMap[key] || word;
+    });
+
+    translated = translated
+      .replace(/\s+/g, " ")
+      .replace(/\s+([,.!?])/g, "$1")
+      .trim();
+
+    return translated === original ? original : translated;
+  }
+
   function populateStaticSelects() {
     const sourceOptions = SOURCES.map(
       (source) => `<option value="${source.id}">${escapeHtml(source.label)}</option>`,
@@ -576,6 +733,7 @@
       villaRoom: clean(form.get("villaRoom")),
       adults: Number(form.get("adults") || 1),
       children: Number(form.get("children") || 0),
+      pets: Number(form.get("pets") || 0),
       status: clean(form.get("bookingStatus")),
       idProof: clean(form.get("idProof")),
       email: clean(form.get("email")),
@@ -597,12 +755,14 @@
     setValue("villaRoom", booking.villaRoom);
     setValue("adults", booking.adults);
     setValue("children", booking.children);
+    setValue("pets", booking.pets || 0);
     setValue("bookingStatus", booking.status);
     setValue("idProof", booking.idProof);
     setValue("email", booking.email);
     setValue("vehicle", booking.vehicle);
     setValue("requests", booking.requests);
     setValue("notes", booking.notes);
+    renderNotePreview();
   }
 
   function resetForm() {
@@ -614,9 +774,11 @@
     setValue("villaRoom", "Willow Villa");
     setValue("adults", 2);
     setValue("children", 0);
+    setValue("pets", 0);
     setValue("platform", "airbnb");
     setValue("bookingStatus", "confirmed");
     setValue("idProof", "pending");
+    renderNotePreview();
   }
 
   function setValue(id, value) {
@@ -715,6 +877,7 @@
           villaRoom: raw.villaRoom || "Willow Villa",
           adults: Number(raw.adults || 1),
           children: Number(raw.children || 0),
+          pets: Number(raw.pets || 0),
           status: normalizeStatus(raw.status),
           idProof: normalizeIdProof(raw.idProof),
           email: raw.email,
@@ -759,6 +922,7 @@
           villaRoom: "Willow Villa",
           adults: 1,
           children: 0,
+          pets: 0,
           status: "confirmed",
           idProof: "pending",
           email: extractEmail(description),
@@ -823,6 +987,7 @@
       adults: Number.isFinite(booking.adults) && booking.adults > 0 ? booking.adults : 1,
       children:
         Number.isFinite(booking.children) && booking.children >= 0 ? booking.children : 0,
+      pets: Number.isFinite(booking.pets) && booking.pets >= 0 ? booking.pets : 0,
       status: booking.status || "confirmed",
       idProof: booking.idProof || "pending",
     };
@@ -884,6 +1049,7 @@
       villaRoom: ["villaroom", "villa", "room", "unit", "listing"],
       adults: ["adults", "adult"],
       children: ["children", "child", "kids"],
+      pets: ["pets", "pet", "dog", "dogs", "cat", "cats"],
       status: ["status", "bookingstatus"],
       idProof: ["idproof", "idstatus", "identityproof"],
       email: ["email", "emailaddress"],
@@ -992,6 +1158,7 @@
       ["villaRoom", t("villaRoom")],
       ["adults", t("adults")],
       ["children", t("children")],
+      ["pets", t("pets")],
       ["status", t("status")],
       ["idProof", t("idProof")],
       ["email", t("email")],
@@ -1102,6 +1269,14 @@
 
   function clean(value) {
     return String(value || "").trim();
+  }
+
+  function escapeRegExp(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function firstName(value) {
+    return clean(value).split(/\s+/)[0] || "";
   }
 
   function normalizeToken(value) {

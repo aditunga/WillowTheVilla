@@ -21,6 +21,7 @@ Useful optional columns:
 - `villaRoom`
 - `adults`
 - `children`
+- `pets`
 - `status`
 - `idProof`
 - `email`

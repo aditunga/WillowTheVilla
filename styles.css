@@ -429,7 +429,7 @@ svg {
 .day-cell {
   position: relative;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(38px, 1fr);
   min-width: 0;
   min-height: clamp(58px, 14vw, 92px);
   padding: 5px;
@@ -461,15 +461,80 @@ svg {
 }
 
 .booking-stack {
-  display: grid;
-  align-self: end;
+  display: flex;
+  flex-direction: column;
   gap: 3px;
-  margin-top: 7px;
+  align-self: stretch;
+  min-height: 100%;
+  margin-top: 6px;
 }
 
 .source-bar {
   height: 6px;
   border-radius: 999px;
+}
+
+.booking-pill {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 18px;
+  padding: 2px 5px;
+  color: #fff;
+  font-size: clamp(0.56rem, 1.75vw, 0.72rem);
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: 0 3px 8px rgba(20, 33, 27, 0.16);
+}
+
+.booking-pill small {
+  flex: 0 0 auto;
+  font-size: 0.58em;
+  font-weight: 950;
+  opacity: 0.9;
+}
+
+.booking-pill span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.booking-pill.start {
+  margin-top: auto;
+  border-radius: 999px 3px 3px 999px;
+}
+
+.booking-pill.end {
+  border-radius: 3px 999px 999px 3px;
+}
+
+.booking-pill.middle {
+  margin-block: auto;
+  border-radius: 3px;
+}
+
+.booking-pill.same-day {
+  margin-block: auto;
+  border-radius: 999px;
+}
+
+.booking-pill.airbnb {
+  background: var(--airbnb);
+}
+
+.booking-pill.booking {
+  background: var(--booking);
+}
+
+.booking-pill.makemytrip {
+  background: var(--makemytrip);
+}
+
+.booking-pill.direct {
+  background: var(--direct);
 }
 
 .more-count {
@@ -591,6 +656,7 @@ svg {
   display: block;
   margin-top: 5px;
   overflow-wrap: anywhere;
+  white-space: pre-line;
   font-size: 0.94rem;
   line-height: 1.22;
 }
@@ -702,6 +768,23 @@ label span {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 900;
+}
+
+.note-preview {
+  display: block;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #cfe2d7;
+  border-radius: var(--radius);
+  background: #edf8f1;
+  color: var(--willow);
+  font-weight: 900;
+  line-height: 1.35;
+  white-space: pre-line;
+}
+
+.note-preview[hidden] {
+  display: none;
 }
 
 input,
