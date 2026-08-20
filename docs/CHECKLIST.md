@@ -8,5 +8,6 @@
 - [x] Move less-used fields into `More details`.
 - [x] Use real Willow The Villa photos from the Airbnb listing.
 - [x] Keep paid amount/payment fields out of the website.
+- [x] Require 4-digit code before saving a new booking.
 - [ ] Add shared booking storage so all phones see the same data.
 - [ ] Add authorized booking sync from email/API/channel manager when credentials/export access is available.

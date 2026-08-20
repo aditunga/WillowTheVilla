@@ -1,7 +1,9 @@
 (() => {
   const STORAGE_KEY = "willow-the-villa-bookings-v1";
   const LANGUAGE_KEY = "willow-the-villa-language";
+  const ADD_BOOKING_CODE = "9313";
   const DAY_MS = 24 * 60 * 60 * 1000;
+  let passcodeResolve = null;
 
   const SOURCES = [
     {
@@ -72,6 +74,12 @@
       notes: "కేర్‌టేకర్ నోట్లు",
       nights: "రాత్రులు",
       noValue: "లేదు",
+      passcodeCancel: "రద్దు",
+      passcodeConfirm: "సేవ్",
+      passcodeHelp: "కొత్త బుకింగ్ సేవ్ చేయడానికి 4 అంకెల కోడ్ ఇవ్వండి.",
+      passcodeLabel: "4 అంకెల కోడ్",
+      passcodeTitle: "బుకింగ్ కోడ్",
+      passcodeWrong: "కోడ్ తప్పు",
       phone: "ఫోన్ నంబర్",
       platform: "ఎక్కడ బుక్ అయింది",
       quickAdd: "జోడించు",
@@ -129,6 +137,12 @@
       notes: "Caretaker notes",
       nights: "nights",
       noValue: "None",
+      passcodeCancel: "Cancel",
+      passcodeConfirm: "Save",
+      passcodeHelp: "Enter the 4-digit code to save a new booking.",
+      passcodeLabel: "4-digit code",
+      passcodeTitle: "Booking code",
+      passcodeWrong: "Wrong code",
       phone: "Phone number",
       platform: "Booked through",
       quickAdd: "Add",
@@ -168,6 +182,11 @@
     languageToggle: document.getElementById("languageToggle"),
     monthGrid: document.getElementById("monthGrid"),
     nextMonth: document.getElementById("nextMonth"),
+    passcodeCancel: document.getElementById("passcodeCancel"),
+    passcodeError: document.getElementById("passcodeError"),
+    passcodeForm: document.getElementById("passcodeForm"),
+    passcodeInput: document.getElementById("passcodeInput"),
+    passcodeOverlay: document.getElementById("passcodeOverlay"),
     platform: document.getElementById("platform"),
     prevMonth: document.getElementById("prevMonth"),
     quickAddButton: document.getElementById("quickAddButton"),
@@ -258,12 +277,18 @@
       }
     });
 
-    els.bookingForm.addEventListener("submit", (event) => {
+    els.bookingForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const booking = readForm();
       if (parseISO(booking.checkOut) <= parseISO(booking.checkIn)) {
         toast(t("invalidDates"));
         return;
+      }
+
+      const isNewBooking = !booking.id;
+      if (isNewBooking) {
+        const allowed = await requestPasscode();
+        if (!allowed) return;
       }
 
       if (booking.id) {
@@ -286,12 +311,49 @@
     els.resetButton.addEventListener("click", resetForm);
     els.exportButton.addEventListener("click", exportCsv);
     els.importButton.addEventListener("click", importSelectedFile);
+    els.passcodeCancel.addEventListener("click", () => closePasscode(false));
+    els.passcodeForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (els.passcodeInput.value === ADD_BOOKING_CODE) {
+        closePasscode(true);
+        return;
+      }
+      els.passcodeError.hidden = false;
+      els.passcodeInput.select();
+    });
+    els.passcodeInput.addEventListener("input", () => {
+      els.passcodeInput.value = els.passcodeInput.value.replace(/\D/g, "").slice(0, 4);
+      els.passcodeError.hidden = true;
+    });
+    els.passcodeOverlay.addEventListener("click", (event) => {
+      if (event.target === els.passcodeOverlay) closePasscode(false);
+    });
     els.quickAddButton.addEventListener("click", () => {
       resetForm();
       els.entryCard.open = true;
       els.entryCard.scrollIntoView({ block: "start" });
       document.getElementById("guestName").focus({ preventScroll: true });
     });
+  }
+
+  function requestPasscode() {
+    return new Promise((resolve) => {
+      passcodeResolve = resolve;
+      els.passcodeInput.value = "";
+      els.passcodeError.hidden = true;
+      els.passcodeOverlay.hidden = false;
+      document.body.classList.add("modal-open");
+      requestAnimationFrame(() => els.passcodeInput.focus());
+    });
+  }
+
+  function closePasscode(allowed) {
+    if (!passcodeResolve) return;
+    const resolve = passcodeResolve;
+    passcodeResolve = null;
+    els.passcodeOverlay.hidden = true;
+    document.body.classList.remove("modal-open");
+    resolve(allowed);
   }
 
   function render() {

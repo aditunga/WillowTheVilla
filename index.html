@@ -44,6 +44,9 @@
       <symbol id="icon-upload" viewBox="0 0 24 24">
         <path d="M12 16V4m0 0 5 5m-5-5L7 9M5 20h14" />
       </symbol>
+      <symbol id="icon-lock" viewBox="0 0 24 24">
+        <path d="M7 11V8a5 5 0 0 1 10 0v3M6 11h12v10H6z" />
+      </symbol>
     </svg>
 
     <div class="site-shell">
@@ -237,6 +240,37 @@
           </button>
         </details>
       </main>
+    </div>
+
+    <div class="passcode-overlay" id="passcodeOverlay" hidden>
+      <form class="passcode-modal" id="passcodeForm">
+        <div class="passcode-icon">
+          <svg><use href="#icon-lock"></use></svg>
+        </div>
+        <h2 data-i18n="passcodeTitle">బుకింగ్ కోడ్</h2>
+        <p data-i18n="passcodeHelp">కొత్త బుకింగ్ సేవ్ చేయడానికి 4 అంకెల కోడ్ ఇవ్వండి.</p>
+        <label>
+          <span data-i18n="passcodeLabel">4 అంకెల కోడ్</span>
+          <input
+            id="passcodeInput"
+            type="password"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            maxlength="4"
+            pattern="[0-9]*"
+            required
+          />
+        </label>
+        <p class="passcode-error" id="passcodeError" data-i18n="passcodeWrong" hidden>
+          కోడ్ తప్పు
+        </p>
+        <div class="passcode-actions">
+          <button class="ghost-button" id="passcodeCancel" type="button" data-i18n="passcodeCancel">
+            రద్దు
+          </button>
+          <button class="primary-button" type="submit" data-i18n="passcodeConfirm">సేవ్</button>
+        </div>
+      </form>
     </div>
 
     <script src="app.js"></script>

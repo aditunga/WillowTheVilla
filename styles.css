@@ -41,6 +41,10 @@ body {
   color: var(--ink);
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 button,
 input,
 select,
@@ -762,6 +766,73 @@ textarea:focus {
 .toast.show {
   transform: translateY(0);
   opacity: 1;
+}
+
+.passcode-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(20, 33, 27, 0.58);
+  backdrop-filter: blur(10px);
+}
+
+.passcode-overlay[hidden] {
+  display: none;
+}
+
+.passcode-modal {
+  width: min(100%, 390px);
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.passcode-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 12px;
+  border-radius: var(--radius);
+  background: var(--willow);
+  color: #fff;
+}
+
+.passcode-modal h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.passcode-modal p {
+  margin: 8px 0 16px;
+  color: var(--muted);
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.passcode-modal input {
+  min-height: 58px;
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 950;
+  letter-spacing: 0.18em;
+}
+
+.passcode-modal .passcode-error {
+  margin: 8px 0 0;
+  color: #a43d27;
+}
+
+.passcode-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 16px;
 }
 
 @media (max-width: 430px) {
