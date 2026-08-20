@@ -57,6 +57,32 @@ module.exports = async function run() {
     return app.confirms[0].replace(/\n+/g, " ");
   });
 
+  await test("an overlap is caught even when the property is named differently", async () => {
+    app.confirms.length = 0;
+    app.click("#adminButton");
+    app.click("#adminAddBooking");
+    app.fill("guestName", "Different Listing Name");
+    app.fill("checkIn", day(2));
+    app.fill("checkOut", day(3));
+    // Ravi's booking came in as "Willow Villa"; an Airbnb export would call the
+    // same property "Willow - The Villa". It is still the same villa.
+    const before = app.stored().length;
+    const answerYes = app.window.confirm;
+    app.window.confirm = (message) => {
+      app.confirms.push(message);
+      return false; // decline, so nothing is stored and later counts hold
+    };
+    app.submit("#bookingForm");
+    await app.settle();
+    app.window.confirm = answerYes;
+
+    assert(app.confirms.length === 1, `confirms: ${app.confirms.length}`);
+    assert(/Ravi Kumar/.test(app.confirms[0]), app.confirms[0]);
+    assert(app.stored().length === before, "saved despite the prompt being declined");
+    app.click("#closeFormModal");
+    return "clash found across differing property names, and declining saved nothing";
+  });
+
   await test("free dates save without a prompt", async () => {
     app.confirms.length = 0;
     app.click("#adminButton");

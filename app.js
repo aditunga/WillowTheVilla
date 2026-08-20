@@ -1380,12 +1380,13 @@
         .join("") + more;
   }
 
+  // The whole villa is let as one, so any overlap in dates is a clash. Comparing
+  // room names missed it whenever an import spelled the property differently —
+  // "Willow - The Villa" from an Airbnb export against "Willow Villa" here.
   function overlappingBookings(booking) {
-    const room = normalizeToken(booking.villaRoom);
     return activeBookings().filter(
       (item) =>
         item.id !== booking.id &&
-        normalizeToken(item.villaRoom) === room &&
         booking.checkIn < item.checkOut &&
         item.checkIn < booking.checkOut,
     );
@@ -1686,7 +1687,6 @@
         ${staySummary}
 
         <div class="detail-grid">
-          ${detail(t("villaRoom"), booking.villaRoom)}
           ${detail(t("guests"), guestCount)}
           ${adminDetails}
           ${optionalDetails}
