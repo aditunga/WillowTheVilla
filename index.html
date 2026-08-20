@@ -8,10 +8,16 @@
       name="description"
       content="Telugu-first Willow The Villa booking calendar for caretakers."
     />
+    <meta name="theme-color" content="#145d3b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Willow" />
     <link rel="preload" href="assets/logo.png" as="image" />
     <link rel="preload" href="assets/listing/willow-2.jpeg" as="image" />
     <link rel="icon" href="assets/logo.png" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="apple-touch-icon" href="assets/logo.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css?v=20260820-1700" />
   </head>
   <body>
     <svg class="sprite" aria-hidden="true" focusable="false">
@@ -52,6 +58,12 @@
       </symbol>
     </svg>
 
+    <noscript>
+      <p class="noscript-note">
+        ఈ క్యాలెండర్ పని చేయడానికి JavaScript అవసరం. / This calendar needs JavaScript.
+      </p>
+    </noscript>
+
     <div class="site-shell">
       <header class="site-header">
         <a class="brand" href="#calendarTitle" aria-label="Willow The Villa">
@@ -63,18 +75,6 @@
         </a>
 
         <div class="header-actions">
-          <button class="primary-button quick-add-button" id="quickAddButton" type="button" hidden>
-            <svg><use href="#icon-plus"></use></svg>
-            <span data-i18n="quickAdd">జోడించు</span>
-          </button>
-          <button class="ghost-button" id="openImportModal" type="button" hidden>
-            <svg><use href="#icon-upload"></use></svg>
-            <span data-i18n="importShort">ఇంపోర్ట్</span>
-          </button>
-          <button class="ghost-button" id="exportButton" type="button" hidden>
-            <svg><use href="#icon-download"></use></svg>
-            <span>CSV</span>
-          </button>
           <button class="ghost-button admin-button" id="adminButton" type="button">
             <svg><use href="#icon-lock"></use></svg>
             <span id="adminButtonLabel" data-i18n="admin">అడ్మిన్</span>
@@ -98,7 +98,20 @@
             </button>
           </div>
 
-          <div class="legend" id="sourceLegend" aria-label="Booking source legend"></div>
+          <div class="calendar-search">
+            <label class="visually-hidden" for="searchInput" data-i18n="searchLabel">వెతకండి</label>
+            <input
+              id="searchInput"
+              type="search"
+              autocomplete="off"
+              data-i18n-placeholder="searchPlaceholder"
+              placeholder="అతిథి పేరు, ఫోన్ లేదా బుకింగ్ ఐడి"
+              aria-describedby="searchResults"
+            />
+            <div class="search-results" id="searchResults" hidden></div>
+          </div>
+
+          <div class="today-strip" id="todayStrip"></div>
 
           <div class="weekday-row" id="weekdayRow" aria-hidden="true"></div>
           <div class="month-grid" id="monthGrid"></div>
@@ -107,6 +120,13 @@
             <button class="ghost-button" id="todayButton" type="button" data-i18n="today">ఈరోజు</button>
             <button class="ghost-button" id="clearSelectionButton" type="button" data-i18n="clearSelection">
               సెలెక్షన్ క్లియర్
+            </button>
+          </div>
+
+          <div class="sync-row">
+            <span class="sync-status" id="syncStatus" role="status"></span>
+            <button class="link-button" id="refreshButton" type="button" hidden>
+              <span data-i18n="syncRefresh">రిఫ్రెష్</span>
             </button>
           </div>
         </section>
@@ -353,7 +373,7 @@
       </section>
     </div>
 
-    <script src="supabase-config.js?v=20260820-1605"></script>
-    <script src="app.js?v=20260820-1605"></script>
+    <script src="supabase-config.js?v=20260820-1700"></script>
+    <script src="app.js?v=20260820-1700"></script>
   </body>
 </html>

@@ -1,0 +1,26 @@
+{
+  "name": "Willow The Villa Calendar",
+  "short_name": "Willow",
+  "description": "Telugu-first booking calendar for Willow The Villa caretakers.",
+  "lang": "te",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f7f2",
+  "theme_color": "#145d3b",
+  "icons": [
+    {
+      "src": "assets/logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

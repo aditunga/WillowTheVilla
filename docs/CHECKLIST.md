@@ -36,4 +36,15 @@
 - [x] Split caretaker-safe booking fields from owner-only private and financial fields in Supabase.
 - [x] Add Supabase Auth/RLS SQL setup for owner-only add, edit, delete, import, export, and private details.
 - [x] Keep Add, Import, CSV, Logout, and financial summary inside the password-gated Owner view popup.
+- [x] Remove the booking source legend because the booking popup already names the source.
+- [x] Add a today strip with arrivals, departures, and guests staying tonight.
+- [x] Add search by guest name, phone number, or booking ID.
+- [x] Warn the owner before saving a booking that overlaps another stay.
+- [x] Show a live status chip worked out from today instead of the stored status.
+- [x] Show when cloud data was last updated and refresh on focus, on reconnect, and on demand.
+- [x] Keep working when `localStorage` is unavailable instead of failing to start.
+- [x] Keep the whole calendar usable from a keyboard and announce day cells to screen readers.
+- [x] Trap focus inside popups and close only the top-most popup on `Escape`.
+- [x] Add a web app manifest and offline cache so the calendar installs and opens without signal.
+- [x] Add a jsdom test suite covering the caretaker view, owner view, and imports.
 - [ ] Add authorized booking sync from email/API/channel manager when credentials/export access is available.

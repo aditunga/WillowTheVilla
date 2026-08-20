@@ -1,0 +1,13 @@
+{
+  "name": "willow-the-villa-calendar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static Telugu-first booking calendar for Willow The Villa. The site itself ships as plain HTML/CSS/JS — this package only exists for the test run.",
+  "scripts": {
+    "test": "node tests/run.js",
+    "serve": "python3 -m http.server 4173"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0"
+  }
+}

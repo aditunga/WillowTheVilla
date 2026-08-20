@@ -43,6 +43,21 @@ In GitHub:
 
 If you want shared bookings and real owner-only financial/private fields, configure Supabase before or after publishing. See `docs/SUPABASE.md`.
 
+## Offline Cache And Home Screen Install
+
+`manifest.webmanifest` and `sw.js` must sit next to `index.html` at the site root, which
+is where GitHub Pages already serves them from. Once the site is opened over HTTPS:
+
+- Android Chrome and iOS Safari offer `Add to Home Screen`, and the calendar then opens
+  full screen with the Willow icon.
+- `sw.js` caches the page shell. It always tries the network first, so a deploy shows up
+  on the next load; the cache is only used when the phone has no signal. Booking data
+  itself already survives offline through `localStorage`.
+
+To turn the offline cache off, delete `sw.js`, remove the `registerServiceWorker()` call
+in `app.js`, and bump the `?v=` query on the script tags in `index.html` so phones pick up
+the change.
+
 ## DuckDNS
 
 DuckDNS is not needed for GitHub Pages. GitHub Pages already gives the free `github.io` website URL.

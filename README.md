@@ -7,12 +7,38 @@ Static, mobile-first booking calendar for Willow The Villa caretakers.
 - Shows one unified calendar for Airbnb, Booking.com, MakeMyTrip, and Direct bookings.
 - Uses Telugu first, with an English toggle.
 - Shows source colors on calendar dates.
+- Opens a today strip with arrivals, departures, and who is staying tonight.
+- Searches bookings by guest name, phone number, or booking ID and jumps to the date.
 - Shows caretakers the guest name, phone number, dates, check-in/checkout times, booking source, arrival time, guest count, requests, and caretaker notes after tapping a date.
+- Shows a live status chip (arriving / staying / checking out / completed) worked out from today's date.
 - Adds an Admin / Owner view for adding bookings, importing, CSV export, edit/delete, full booking details, and financials.
+- Warns the owner before saving a booking that overlaps another stay in the same villa/room.
 - Keeps paid amount and owner-only fields out of the caretaker view.
 - Imports CSV files with full guest details.
 - Imports ICS calendar files for platform date ranges.
 - Uses Supabase shared storage when configured, with browser `localStorage` fallback.
+- Re-checks the cloud when the phone comes back to the app or back online, and shows when the data was last updated.
+- Installs to a phone home screen and keeps working offline from the last loaded copy.
+
+## Keyboard And Screen Readers
+
+- Arrow keys move across calendar days and roll into the next or previous month.
+- `Escape` closes the top-most popup; `Tab` stays inside an open popup.
+- Day cells announce the date, the number of bookings, and the guest names.
+
+## Tests
+
+The published site is still plain HTML, CSS, and JavaScript with no build step. The
+tests are the only thing that needs Node, and they drive the real `index.html` in
+jsdom:
+
+```sh
+npm install
+npm test
+```
+
+`npm run serve` starts a local static server on <http://localhost:4173> if you want
+to click through the site by hand.
 
 ## Free Hosting
 

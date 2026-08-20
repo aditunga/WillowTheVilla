@@ -7,7 +7,55 @@
   const DEFAULT_CHECKOUT_TIME = "11:00";
   const DAY_MS = 24 * 60 * 60 * 1000;
   const REMOTE_TIMEOUT_MS = 4500;
+  const REFRESH_INTERVAL_MS = 2 * 60 * 1000;
+  const FOCUSABLE =
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   let eventsBound = false;
+
+  const storage = createStorage();
+
+  function createStorage() {
+    let backend = null;
+    try {
+      const probe = "willow-storage-probe";
+      window.localStorage.setItem(probe, probe);
+      window.localStorage.removeItem(probe);
+      backend = window.localStorage;
+    } catch {
+      backend = null;
+    }
+
+    const memory = new Map();
+    return {
+      available: Boolean(backend),
+      get(key) {
+        if (!backend) return memory.has(key) ? memory.get(key) : null;
+        try {
+          return backend.getItem(key);
+        } catch {
+          return null;
+        }
+      },
+      set(key, value) {
+        memory.set(key, value);
+        if (!backend) return;
+        try {
+          backend.setItem(key, value);
+        } catch (error) {
+          console.warn("Willow local storage write failed", error);
+        }
+      },
+      remove(key) {
+        memory.delete(key);
+        if (!backend) return;
+        try {
+          backend.removeItem(key);
+        } catch {
+          /* ignore */
+        }
+      },
+    };
+  }
 
   const SOURCES = [
     {
@@ -48,31 +96,24 @@
       adminRequired: "బుకింగ్ మార్చడానికి అడ్మిన్ లాగిన్ అవసరం",
       adminRoleMissing: "ఈ యూజర్‌కు ఓనర్ అనుమతి లేదు",
       adminUsername: "యూజర్ పేరు",
-      airbnb: "Airbnb",
       amountPaid: "చెల్లించిన మొత్తం",
       arrivalTime: "రాక సమయం",
-      booking: "Booking.com",
       bookingId: "బుకింగ్ ఐడి",
       bookedNights: "బుక్ అయిన రాత్రులు",
       calendar: "క్యాలెండర్",
       call: "కాల్",
-      cancelled: "రద్దు అయింది",
       caretaker: "సంరక్షకుల క్యాలెండర్",
       checkIn: "చెక్-ఇన్",
-      checkInAt: "2 PM నుండి",
       checkInTime: "చెక్-ఇన్ సమయం",
       checkOut: "చెక్-అవుట్",
-      checkOutAt: "11 AM వరకు",
       checkoutTime: "చెక్-అవుట్ సమయం",
       children: "పిల్లలు",
       clearForm: "క్లియర్",
       clearSelection: "సెలెక్షన్ క్లియర్",
       close: "మూసివేయి",
-      combined: "Airbnb, Booking.com, MakeMyTrip",
       confirmDelete: "ఈ బుకింగ్ తొలగించాలా?",
       dateRange: "తేదీలు",
       delete: "తొలగించు",
-      direct: "Direct",
       edit: "సవరించు",
       email: "ఈమెయిల్",
       emptyDate: "ఈ తేదీకి బుకింగ్‌లు లేవు",
@@ -92,9 +133,7 @@
       invalidDates: "చెక్-అవుట్ తేదీ చెక్-ఇన్ తర్వాత ఉండాలి",
       averageBooking: "సగటు బుకింగ్",
       confirmedRevenue: "కన్ఫర్మ్డ్ ఆదాయం",
-      financials: "ఫైనాన్షియల్స్",
       logout: "లాగౌట్",
-      makemytrip: "MakeMyTrip",
       notes: "కేర్‌టేకర్ నోట్లు",
       nights: "రాత్రులు",
       noValue: "లేదు",
@@ -110,15 +149,29 @@
       saveBooking: "సేవ్",
       saved: "బుకింగ్ సేవ్ అయింది",
       selectedDate: "ఎంచుకున్న తేదీ",
-      source: "మూలం",
       status: "స్థితి",
       syncFailed: "క్లౌడ్ సేవ్ కాలేదు. మళ్లీ ప్రయత్నించండి.",
-      title: "ఒకే క్యాలెండర్‌లో అన్ని బుకింగ్‌లు",
       today: "ఈరోజు",
       totalBookings: "మొత్తం బుకింగ్‌లు",
       totalRevenue: "మొత్తం ఆదాయం",
       vehicle: "వాహనం నంబర్",
       villaRoom: "విల్లా/గది",
+      arrivingToday: "ఈరోజు వస్తున్నవారు",
+      bookingWord: "బుకింగ్",
+      bookingsWord: "బుకింగ్‌లు",
+      leavingToday: "ఈరోజు వెళ్తున్నవారు",
+      nobody: "ఎవరూ లేరు",
+      overlapConfirm: "అయినా సేవ్ చేయాలా?",
+      overlapTitle: "ఈ తేదీలు ఇప్పటికే బుక్ అయ్యాయి",
+      searchLabel: "వెతకండి",
+      searchNoResults: "ఫలితాలు లేవు",
+      searchPlaceholder: "అతిథి పేరు, ఫోన్ లేదా బుకింగ్ ఐడి",
+      stayingTonight: "ఈరాత్రి ఉంటున్నవారు",
+      syncLocalOnly: "ఈ ఫోన్‌లో మాత్రమే సేవ్",
+      syncOffline: "ఆఫ్‌లైన్ — సేవ్ చేసిన కాపీ",
+      syncRefresh: "రిఫ్రెష్",
+      syncUpdated: "అప్‌డేట్",
+      syncing: "సింక్ అవుతోంది…",
       whatsapp: "వాట్సాప్",
     },
     en: {
@@ -133,31 +186,24 @@
       adminRequired: "Admin login is required to change bookings",
       adminRoleMissing: "This user is not allowed as owner",
       adminUsername: "Username",
-      airbnb: "Airbnb",
       amountPaid: "Amount paid",
       arrivalTime: "Arrival time",
-      booking: "Booking.com",
       bookingId: "Booking ID",
       bookedNights: "Booked nights",
       calendar: "Calendar",
       call: "Call",
-      cancelled: "Cancelled",
       caretaker: "Caretaker calendar",
       checkIn: "Check-in",
-      checkInAt: "from 2 PM",
       checkInTime: "Check-in time",
       checkOut: "Check-out",
-      checkOutAt: "until 11 AM",
       checkoutTime: "Checkout time",
       children: "Children",
       clearForm: "Clear",
       clearSelection: "Clear selection",
       close: "Close",
-      combined: "Airbnb, Booking.com, MakeMyTrip",
       confirmDelete: "Delete this booking?",
       dateRange: "Dates",
       delete: "Delete",
-      direct: "Direct",
       edit: "Edit",
       email: "Email",
       emptyDate: "No bookings for this date",
@@ -177,9 +223,7 @@
       invalidDates: "Check-out must be after check-in",
       averageBooking: "Average booking",
       confirmedRevenue: "Confirmed revenue",
-      financials: "Financials",
       logout: "Logout",
-      makemytrip: "MakeMyTrip",
       notes: "Caretaker notes",
       nights: "nights",
       noValue: "None",
@@ -195,29 +239,50 @@
       saveBooking: "Save",
       saved: "Booking saved",
       selectedDate: "Selected date",
-      source: "Source",
       status: "Status",
       syncFailed: "Cloud save failed. Try again.",
-      title: "All bookings in one calendar",
       today: "Today",
       totalBookings: "Total bookings",
       totalRevenue: "Total revenue",
       vehicle: "Vehicle number",
       villaRoom: "Villa/room",
+      arrivingToday: "Arriving today",
+      bookingWord: "booking",
+      bookingsWord: "bookings",
+      leavingToday: "Leaving today",
+      nobody: "Nobody",
+      overlapConfirm: "Save anyway?",
+      overlapTitle: "These dates overlap another booking",
+      searchLabel: "Search",
+      searchNoResults: "No matches",
+      searchPlaceholder: "Guest name, phone or booking ID",
+      stayingTonight: "Staying tonight",
+      syncLocalOnly: "Saved on this device",
+      syncOffline: "Offline — showing saved copy",
+      syncRefresh: "Refresh",
+      syncUpdated: "Updated",
+      syncing: "Syncing…",
       whatsapp: "WhatsApp",
     },
   };
+
+  const storedLang = storage.get(LANGUAGE_KEY);
 
   const state = {
     bookings: [],
     currentMonth: startOfMonth(today()),
     isAdmin: false,
-    lang: localStorage.getItem(LANGUAGE_KEY) || "te",
+    isSyncing: false,
+    lang: COPY[storedLang] ? storedLang : "te",
+    lastSyncedAt: 0,
     remoteClient: null,
     remoteConfig: null,
     remoteError: "",
+    searchTerm: "",
     selectedDate: toISO(today()),
   };
+
+  const modalStack = [];
 
   const els = {
     adminAddBooking: document.getElementById("adminAddBooking"),
@@ -232,7 +297,6 @@
     adminPanelModal: document.getElementById("adminPanelModal"),
     adminPassword: document.getElementById("adminPassword"),
     adminUsername: document.getElementById("adminUsername"),
-    amountPaid: document.getElementById("amountPaid"),
     bookingForm: document.getElementById("bookingForm"),
     bookingInternalId: document.getElementById("bookingInternalId"),
     bookingModal: document.getElementById("bookingModal"),
@@ -244,9 +308,8 @@
     closeFormModal: document.getElementById("closeFormModal"),
     closeImportModal: document.getElementById("closeImportModal"),
     clearSelectionButton: document.getElementById("clearSelectionButton"),
-    entryCard: document.getElementById("entryCard"),
-    exportButton: document.getElementById("exportButton"),
     formModal: document.getElementById("formModal"),
+    guestName: document.getElementById("guestName"),
     idProof: document.getElementById("idProof"),
     importButton: document.getElementById("importButton"),
     importFile: document.getElementById("importFile"),
@@ -262,36 +325,71 @@
     nextMonth: document.getElementById("nextMonth"),
     notePreview: document.getElementById("notePreview"),
     notes: document.getElementById("notes"),
-    phone: document.getElementById("phone"),
     platform: document.getElementById("platform"),
     prevMonth: document.getElementById("prevMonth"),
-    openImportModal: document.getElementById("openImportModal"),
-    quickAddButton: document.getElementById("quickAddButton"),
+    refreshButton: document.getElementById("refreshButton"),
     resetButton: document.getElementById("resetButton"),
+    searchInput: document.getElementById("searchInput"),
+    searchResults: document.getElementById("searchResults"),
     selectedBookings: document.getElementById("selectedBookings"),
     selectedCount: document.getElementById("selectedCount"),
     selectedTitle: document.getElementById("selectedTitle"),
-    sourceLegend: document.getElementById("sourceLegend"),
+    syncStatus: document.getElementById("syncStatus"),
     todayButton: document.getElementById("todayButton"),
+    todayStrip: document.getElementById("todayStrip"),
     weekdayRow: document.getElementById("weekdayRow"),
   };
 
   init();
 
   async function init() {
-    els.phone.required = false;
-    els.phone.removeAttribute("required");
     state.bookings = loadLocalBookings();
     populateStaticSelects();
     bindEvents();
     resetForm();
     render();
+    registerServiceWorker();
 
     state.remoteConfig = getSupabaseConfig();
+    renderSyncStatus();
     hydrateRemote().catch((error) => {
       state.remoteError = error.message || String(error);
       console.warn("Willow cloud startup failed", error);
+      renderSyncStatus();
     });
+    startAutoRefresh();
+  }
+
+  function registerServiceWorker() {
+    if (!window.location.protocol.startsWith("http")) return;
+    navigator.serviceWorker?.register("sw.js").catch((error) => {
+      console.warn("Willow offline cache unavailable", error);
+    });
+  }
+
+  function startAutoRefresh() {
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) refreshFromCloud();
+    });
+    window.addEventListener("online", () => refreshFromCloud());
+    window.setInterval(() => {
+      if (!document.hidden) refreshFromCloud();
+    }, REFRESH_INTERVAL_MS);
+  }
+
+  async function refreshFromCloud({ force = false } = {}) {
+    if (!state.remoteClient || state.isSyncing) return;
+    // Never pull the ground out from under an open edit or import.
+    if (!force && (!els.formModal.hidden || !els.importModal.hidden)) return;
+
+    state.isSyncing = true;
+    renderSyncStatus();
+    try {
+      state.bookings = await loadBookings();
+    } finally {
+      state.isSyncing = false;
+    }
+    render();
   }
 
   function bindEvents() {
@@ -329,19 +427,14 @@
 
     els.languageToggle.addEventListener("click", () => {
       state.lang = state.lang === "te" ? "en" : "te";
-      localStorage.setItem(LANGUAGE_KEY, state.lang);
+      storage.set(LANGUAGE_KEY, state.lang);
       populateStatusSelects();
       render();
     });
 
     els.monthGrid.addEventListener("click", (event) => {
       const dayButton = event.target.closest("[data-date]");
-      if (!dayButton) return;
-      state.selectedDate = dayButton.dataset.date;
-      state.currentMonth = startOfMonth(parseISO(state.selectedDate));
-      resetForm();
-      render();
-      openBookingModal();
+      if (dayButton) goToDate(dayButton.dataset.date);
     });
 
     els.selectedBookings.addEventListener("click", async (event) => {
@@ -382,10 +475,29 @@
         toast(t("adminRequired"));
         return;
       }
-      const booking = readForm();
-      if (parseISO(booking.checkOut) <= parseISO(booking.checkIn)) {
+      const draft = readForm();
+      if (!draft.checkIn || !draft.checkOut || parseISO(draft.checkOut) <= parseISO(draft.checkIn)) {
         toast(t("invalidDates"));
         return;
+      }
+
+      let booking;
+      try {
+        booking = normalizeBooking(draft);
+      } catch {
+        toast(t("invalidDates"));
+        return;
+      }
+
+      const clashes = overlappingBookings(booking);
+      if (clashes.length) {
+        const summary = clashes
+          .map(
+            (item) =>
+              `• ${item.guestName} (${formatShortDate(item.checkIn)} – ${formatShortDate(item.checkOut)})`,
+          )
+          .join("\n");
+        if (!window.confirm(`${t("overlapTitle")}:\n\n${summary}\n\n${t("overlapConfirm")}`)) return;
       }
 
       if (booking.id) {
@@ -407,10 +519,48 @@
     });
 
     els.resetButton.addEventListener("click", resetForm);
-    els.exportButton.addEventListener("click", exportCsv);
     els.importButton.addEventListener("click", importSelectedFile);
-    els.openImportModal.addEventListener("click", openImportModal);
     els.notes.addEventListener("input", renderNotePreview);
+    els.refreshButton.addEventListener("click", () => refreshFromCloud({ force: true }));
+
+    els.monthGrid.addEventListener("keydown", (event) => {
+      const cell = event.target.closest("[data-date]");
+      if (!cell) return;
+      const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[event.key];
+      if (!step) return;
+      event.preventDefault();
+      focusDate(toISO(addDays(parseISO(cell.dataset.date), step)));
+    });
+
+    els.searchInput.addEventListener("input", () => {
+      state.searchTerm = els.searchInput.value;
+      renderSearchResults();
+    });
+
+    els.searchInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      clearSearch();
+    });
+
+    els.searchResults.addEventListener("click", (event) => {
+      const hit = event.target.closest("[data-goto]");
+      if (!hit) return;
+      goToDate(hit.dataset.goto);
+      clearSearch();
+    });
+
+    document.addEventListener("click", (event) => {
+      if (els.searchResults.hidden) return;
+      if (event.target.closest(".calendar-search")) return;
+      els.searchResults.hidden = true;
+    });
+
+    els.todayStrip.addEventListener("click", (event) => {
+      const tile = event.target.closest("[data-goto]");
+      if (!tile) return;
+      goToDate(tile.dataset.goto);
+    });
     els.adminButton.addEventListener("click", () => {
       if (state.isAdmin) {
         openAdminPanel();
@@ -484,29 +634,99 @@
     els.closeFormModal.addEventListener("click", closeFormModal);
     els.closeImportModal.addEventListener("click", closeImportModal);
     document.addEventListener("keydown", (event) => {
+      if (event.key === "Tab") {
+        trapTab(event);
+        return;
+      }
       if (event.key !== "Escape") return;
-      if (!els.adminLoginModal.hidden) closeAdminLogin();
-      if (!els.adminPanelModal.hidden) closeAdminPanel();
-      if (!els.bookingModal.hidden) closeBookingModal();
-      if (!els.formModal.hidden) closeFormModal();
-      if (!els.importModal.hidden) closeImportModal();
+      const modal = topModal();
+      if (!modal) return;
+      event.preventDefault();
+      closeModal(modal);
     });
-    els.quickAddButton.addEventListener("click", () => {
-      resetForm();
-      openFormModal();
+  }
+
+  function goToDate(iso) {
+    if (!iso) return;
+    state.selectedDate = iso;
+    state.currentMonth = startOfMonth(parseISO(iso));
+    resetForm();
+    render();
+    openBookingModal();
+  }
+
+  function focusDate(iso) {
+    const date = parseISO(iso);
+    if (
+      date.getMonth() !== state.currentMonth.getMonth() ||
+      date.getFullYear() !== state.currentMonth.getFullYear()
+    ) {
+      state.currentMonth = startOfMonth(date);
+      renderCalendar();
+    }
+    els.monthGrid.querySelectorAll("[data-date]").forEach((cell) => {
+      cell.tabIndex = cell.dataset.date === iso ? 0 : -1;
     });
+    els.monthGrid.querySelector(`[data-date="${iso}"]`)?.focus({ preventScroll: true });
+  }
+
+  function clearSearch() {
+    state.searchTerm = "";
+    els.searchInput.value = "";
+    els.searchResults.hidden = true;
+    els.searchResults.innerHTML = "";
+  }
+
+  function openModal(modal, focusTarget) {
+    if (!modal.hidden) return;
+    modalStack.push({ modal, opener: document.activeElement });
+    modal.hidden = false;
+    syncModalLock();
+    requestAnimationFrame(() => focusTarget?.focus({ preventScroll: true }));
+  }
+
+  function closeModal(modal) {
+    const index = modalStack.findIndex((entry) => entry.modal === modal);
+    modal.hidden = true;
+    syncModalLock();
+    if (index < 0) return;
+    const [entry] = modalStack.splice(index, 1);
+    if (entry.opener?.isConnected) entry.opener.focus({ preventScroll: true });
+  }
+
+  function topModal() {
+    return modalStack.length ? modalStack[modalStack.length - 1].modal : null;
+  }
+
+  function trapTab(event) {
+    const modal = topModal();
+    if (!modal) return;
+    const items = Array.from(modal.querySelectorAll(FOCUSABLE)).filter(
+      (element) => element.offsetParent !== null || element === document.activeElement,
+    );
+    if (!items.length) return;
+
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    } else if (!modal.contains(document.activeElement)) {
+      event.preventDefault();
+      first.focus();
+    }
   }
 
   function openBookingModal() {
     if (!state.selectedDate) return;
-    els.bookingModal.hidden = false;
-    syncModalLock();
-    requestAnimationFrame(() => els.closeBookingModal.focus({ preventScroll: true }));
+    openModal(els.bookingModal, els.closeBookingModal);
   }
 
   function closeBookingModal() {
-    els.bookingModal.hidden = true;
-    syncModalLock();
+    closeModal(els.bookingModal);
   }
 
   function openFormModal() {
@@ -515,14 +735,11 @@
       toast(t("adminRequired"));
       return;
     }
-    els.formModal.hidden = false;
-    syncModalLock();
-    requestAnimationFrame(() => document.getElementById("guestName").focus({ preventScroll: true }));
+    openModal(els.formModal, els.guestName);
   }
 
   function closeFormModal() {
-    els.formModal.hidden = true;
-    syncModalLock();
+    closeModal(els.formModal);
   }
 
   function openImportModal() {
@@ -531,14 +748,11 @@
       toast(t("adminRequired"));
       return;
     }
-    els.importModal.hidden = false;
-    syncModalLock();
-    requestAnimationFrame(() => els.importSource.focus({ preventScroll: true }));
+    openModal(els.importModal, els.importSource);
   }
 
   function closeImportModal() {
-    els.importModal.hidden = true;
-    syncModalLock();
+    closeModal(els.importModal);
   }
 
   function openAdminLogin() {
@@ -546,26 +760,20 @@
     els.adminPassword.value = "";
     els.adminLoginError.textContent = t("adminLoginError");
     els.adminLoginError.hidden = true;
-    els.adminLoginModal.hidden = false;
-    syncModalLock();
-    requestAnimationFrame(() => els.adminPassword.focus({ preventScroll: true }));
+    openModal(els.adminLoginModal, els.adminPassword);
   }
 
   function closeAdminLogin() {
-    els.adminLoginModal.hidden = true;
-    syncModalLock();
+    closeModal(els.adminLoginModal);
   }
 
   function openAdminPanel() {
     renderAdminPanel();
-    els.adminPanelModal.hidden = false;
-    syncModalLock();
-    requestAnimationFrame(() => els.closeAdminPanel.focus({ preventScroll: true }));
+    openModal(els.adminPanelModal, els.closeAdminPanel);
   }
 
   function closeAdminPanel() {
-    els.adminPanelModal.hidden = true;
-    syncModalLock();
+    closeModal(els.adminPanelModal);
   }
 
   function setAdminMode(isAdmin) {
@@ -573,6 +781,7 @@
     if (!isAdmin) {
       closeFormModal();
       closeImportModal();
+      persistBookings(state.bookings);
     }
     render();
   }
@@ -701,10 +910,12 @@
     translatePage();
     renderAdminUi();
     renderAdminPanel();
-    renderLegend();
     renderWeekdays();
+    renderTodayStrip();
     renderCalendar();
     renderSelectedDate();
+    renderSearchResults();
+    renderSyncStatus();
   }
 
   function translatePage() {
@@ -724,9 +935,6 @@
 
   function renderAdminUi() {
     document.body.classList.toggle("admin-mode", state.isAdmin);
-    els.quickAddButton.hidden = true;
-    els.openImportModal.hidden = true;
-    els.exportButton.hidden = true;
     els.adminButtonLabel.textContent = state.isAdmin ? t("ownerView") : t("admin");
   }
 
@@ -759,11 +967,164 @@
       : "";
   }
 
-  function renderLegend() {
-    els.sourceLegend.innerHTML = SOURCES.map((source) => {
-      const label = escapeHtml(t(source.id));
-      return `<span class="legend-item"><span class="source-dot ${source.className}"></span>${label}</span>`;
-    }).join("");
+  function activeBookings() {
+    return state.bookings.filter((booking) => booking.status !== "cancelled");
+  }
+
+  function arrivalsOn(isoDate) {
+    return activeBookings().filter((booking) => booking.checkIn === isoDate);
+  }
+
+  function departuresOn(isoDate) {
+    return activeBookings().filter((booking) => booking.checkOut === isoDate);
+  }
+
+  function stayingOn(isoDate) {
+    return activeBookings().filter(
+      (booking) => booking.checkIn <= isoDate && isoDate < booking.checkOut,
+    );
+  }
+
+  // The stored status goes stale the moment a date passes, so the chip guests and
+  // caretakers see is derived from today instead.
+  function liveStatus(booking) {
+    if (booking.status === "cancelled") return "cancelled";
+    const todayIso = toISO(today());
+    if (booking.checkOut < todayIso) return "completed";
+    if (booking.checkIn === todayIso) return "arriving";
+    if (booking.checkOut === todayIso) return "checkout";
+    if (booking.checkIn < todayIso && todayIso < booking.checkOut) return "staying";
+    return "confirmed";
+  }
+
+  function guestNameList(bookings) {
+    if (!bookings.length) return t("nobody");
+    const names = bookings.map((booking) => firstName(booking.guestName) || getSource(booking.platform).label);
+    const shown = names.slice(0, 3).join(", ");
+    return names.length > 3 ? `${shown} +${names.length - 3}` : shown;
+  }
+
+  function renderTodayStrip() {
+    const todayIso = toISO(today());
+    const tiles = [
+      { key: "arrivingToday", bookings: arrivalsOn(todayIso), tone: "arrive" },
+      { key: "leavingToday", bookings: departuresOn(todayIso), tone: "leave" },
+      { key: "stayingTonight", bookings: stayingOn(todayIso), tone: "stay" },
+    ];
+
+    els.todayStrip.innerHTML = tiles
+      .map(
+        ({ key, bookings, tone }) => `
+        <button class="today-tile ${tone}" type="button" data-goto="${todayIso}">
+          <span class="today-tile-count">${bookings.length}</span>
+          <span class="today-tile-label">${escapeHtml(t(key))}</span>
+          <span class="today-tile-names">${escapeHtml(guestNameList(bookings))}</span>
+        </button>
+      `,
+      )
+      .join("");
+  }
+
+  function renderSyncStatus() {
+    const canSync = Boolean(state.remoteConfig);
+    els.refreshButton.hidden = !canSync;
+
+    let text = t("syncLocalOnly");
+    let tone = "local";
+    if (canSync && state.isSyncing) {
+      text = t("syncing");
+      tone = "busy";
+    } else if (canSync && state.remoteError) {
+      text = t("syncOffline");
+      tone = "warn";
+    } else if (canSync && state.lastSyncedAt) {
+      text = `${t("syncUpdated")} ${formatClock(state.lastSyncedAt)}`;
+      tone = "ok";
+    } else if (canSync) {
+      text = t("syncing");
+      tone = "busy";
+    }
+
+    els.syncStatus.textContent = text;
+    els.syncStatus.dataset.tone = tone;
+    els.syncStatus.title = state.remoteError || "";
+  }
+
+  function searchMatches(term) {
+    const needle = normalizeToken(term);
+    const digits = term.replace(/\D/g, "");
+    if (needle.length < 2 && digits.length < 3) return [];
+
+    const matches = state.bookings.filter((booking) => {
+      const fields = [booking.guestName, booking.villaRoom];
+      if (state.isAdmin) fields.push(booking.bookingId, booking.email, booking.vehicle);
+      const haystack = normalizeToken(fields.filter(Boolean).join(" "));
+      const phoneDigits = clean(booking.phone).replace(/\D/g, "");
+      return (
+        (needle.length >= 2 && haystack.includes(needle)) ||
+        (digits.length >= 3 && phoneDigits.includes(digits))
+      );
+    });
+
+    const todayIso = toISO(today());
+    const upcoming = matches
+      .filter((booking) => booking.checkOut >= todayIso)
+      .sort((a, b) => a.checkIn.localeCompare(b.checkIn));
+    const past = matches
+      .filter((booking) => booking.checkOut < todayIso)
+      .sort((a, b) => b.checkIn.localeCompare(a.checkIn));
+    return [...upcoming, ...past];
+  }
+
+  function renderSearchResults() {
+    const term = clean(state.searchTerm);
+    if (!term) {
+      els.searchResults.hidden = true;
+      els.searchResults.innerHTML = "";
+      return;
+    }
+
+    const matches = searchMatches(term);
+    if (!matches.length) {
+      els.searchResults.hidden = false;
+      els.searchResults.innerHTML = `<p class="search-empty">${escapeHtml(t("searchNoResults"))}</p>`;
+      return;
+    }
+
+    const shown = matches.slice(0, 6);
+    const more =
+      matches.length > shown.length
+        ? `<p class="search-empty">+${matches.length - shown.length}</p>`
+        : "";
+
+    els.searchResults.hidden = false;
+    els.searchResults.innerHTML =
+      shown
+        .map((booking) => {
+          const source = getSource(booking.platform);
+          const meta = `${formatShortDate(booking.checkIn)} – ${formatShortDate(booking.checkOut)} · ${source.label}`;
+          return `
+            <button class="search-hit" type="button" data-goto="${escapeAttr(booking.checkIn)}">
+              <span class="search-hit-name">
+                <span class="source-dot ${source.className}"></span>
+                ${escapeHtml(booking.guestName)}
+              </span>
+              <span class="search-hit-meta">${escapeHtml(meta)}</span>
+            </button>
+          `;
+        })
+        .join("") + more;
+  }
+
+  function overlappingBookings(booking) {
+    const room = normalizeToken(booking.villaRoom);
+    return activeBookings().filter(
+      (item) =>
+        item.id !== booking.id &&
+        normalizeToken(item.villaRoom) === room &&
+        booking.checkIn < item.checkOut &&
+        item.checkIn < booking.checkOut,
+    );
   }
 
   function renderWeekdays() {
@@ -786,6 +1147,11 @@
     const todayIso = toISO(today());
     const selected = state.selectedDate;
     const month = state.currentMonth.getMonth();
+    const focusIso = isoInMonth(selected, firstDay)
+      ? selected
+      : isoInMonth(todayIso, firstDay)
+        ? todayIso
+        : toISO(firstDay);
 
     els.monthGrid.innerHTML = Array.from({ length: 42 }, (_, index) => {
       const date = addDays(gridStart, index);
@@ -813,15 +1179,34 @@
       ]
         .filter(Boolean)
         .join(" ");
-      const ariaLabel = `${formatFullDate(iso)}: ${bookings.length}`;
+      const countWord = bookings.length === 1 ? t("bookingWord") : t("bookingsWord");
+      const ariaLabel = bookings.length
+        ? `${formatFullDate(iso)}, ${bookings.length} ${countWord}: ${guestNameList(bookings)}`
+        : `${formatFullDate(iso)}, ${bookings.length} ${countWord}`;
 
       return `
-        <button class="${classes}" type="button" data-date="${iso}" aria-label="${escapeHtml(ariaLabel)}">
+        <button
+          class="${classes}"
+          type="button"
+          data-date="${iso}"
+          tabindex="${iso === focusIso ? 0 : -1}"
+          ${iso === todayIso ? 'aria-current="date"' : ""}
+          aria-pressed="${iso === selected}"
+          aria-label="${escapeHtml(ariaLabel)}"
+        >
           <span class="day-number">${date.getDate()}</span>
           <span class="booking-stack">${bookingPills}${more}</span>
         </button>
       `;
     }).join("");
+  }
+
+  function isoInMonth(iso, monthStart) {
+    if (!iso) return false;
+    const date = parseISO(iso);
+    return (
+      date.getMonth() === monthStart.getMonth() && date.getFullYear() === monthStart.getFullYear()
+    );
   }
 
   function renderCalendarBooking(booking, isoDate) {
@@ -911,6 +1296,7 @@
 
   function renderGuestCard(booking) {
     const source = getSource(booking.platform);
+    const live = liveStatus(booking);
     const phone = booking.phone || "";
     const callHref = `tel:${phone.replace(/[^\d+]/g, "")}`;
     const whatsappHref = whatsappUrl(phone);
@@ -963,7 +1349,10 @@
             <h3>${escapeHtml(booking.guestName)}</h3>
             <p class="${phone ? "" : "missing-phone"}">${escapeHtml(phone || t("phonePending"))}</p>
           </div>
-          <span class="source-chip ${source.className}">${escapeHtml(source.label)}</span>
+          <div class="guest-chips">
+            <span class="source-chip ${source.className}">${escapeHtml(source.label)}</span>
+            <span class="status-chip ${live}">${escapeHtml(optionLabel(STATUS_OPTIONS, live))}</span>
+          </div>
         </div>
 
         <div class="detail-grid">
@@ -1213,11 +1602,14 @@
         );
         if (state.isAdmin && !remoteBookings.length && localBookings.length) {
           await syncRemoteBookings(localBookings);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(localBookings));
+          persistBookings(localBookings);
+          state.remoteError = "";
+          state.lastSyncedAt = Date.now();
           return localBookings;
         }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteBookings));
+        persistBookings(remoteBookings);
         state.remoteError = "";
+        state.lastSyncedAt = Date.now();
         return remoteBookings;
       } catch (error) {
         state.remoteError = error.message || String(error);
@@ -1228,7 +1620,7 @@
   }
 
   function loadLocalBookings() {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = storage.get(STORAGE_KEY);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -1244,14 +1636,28 @@
             .filter(Boolean);
         }
       } catch {
-        localStorage.removeItem(STORAGE_KEY);
+        storage.remove(STORAGE_KEY);
       }
     }
     return [];
   }
 
+  function persistBookings(bookings) {
+    // Once the owner signs out, the device copy keeps only what a caretaker may see —
+    // but only when Supabase still holds the full record. In local-only mode this
+    // browser is the sole copy, so nothing is thrown away.
+    const dropOwnerFields = !state.isAdmin && Boolean(state.remoteClient);
+    const safe = dropOwnerFields ? bookings.map(stripOwnerFields) : bookings;
+    storage.set(STORAGE_KEY, JSON.stringify(safe));
+  }
+
+  function stripOwnerFields(booking) {
+    const { amountPaid, bookingId, email, vehicle, idProof, ...caretakerFields } = booking;
+    return caretakerFields;
+  }
+
   async function saveBookings({ syncRemote = true } = {}) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.bookings));
+    persistBookings(state.bookings);
     if (!syncRemote || !state.remoteClient || !state.isAdmin) return;
     try {
       await syncRemoteBookings(state.bookings);
@@ -1348,32 +1754,39 @@
 
   function mergeRemoteRows(publicRows, privateRows) {
     const privateById = new Map(privateRows.map((row) => [row.booking_id, row]));
-    return publicRows.map((row) => {
-      const privateRow = privateById.get(row.id) || {};
-      return normalizeBooking({
-        id: row.id,
-        guestName: row.guest_name,
-        phone: row.phone,
-        platform: row.platform,
-        bookingId: privateRow.external_booking_id,
-        amountPaid: privateRow.amount_paid == null ? "" : String(privateRow.amount_paid),
-        checkIn: row.check_in,
-        checkInTime: row.check_in_time,
-        checkOut: row.check_out,
-        checkoutTime: row.checkout_time,
-        arrivalTime: row.arrival_time,
-        villaRoom: row.villa_room,
-        adults: Number(row.adults || 1),
-        children: Number(row.children || 0),
-        pets: Number(row.pets || 0),
-        status: row.status,
-        idProof: privateRow.id_proof,
-        email: privateRow.email,
-        vehicle: privateRow.vehicle,
-        requests: row.requests,
-        notes: row.notes,
-      });
-    });
+    return publicRows
+      .map((row) => {
+        const privateRow = privateById.get(row.id) || {};
+        try {
+          return normalizeBooking({
+            id: row.id,
+            guestName: row.guest_name,
+            phone: row.phone,
+            platform: row.platform,
+            bookingId: privateRow.external_booking_id,
+            amountPaid: privateRow.amount_paid == null ? "" : String(privateRow.amount_paid),
+            checkIn: row.check_in,
+            checkInTime: row.check_in_time,
+            checkOut: row.check_out,
+            checkoutTime: row.checkout_time,
+            arrivalTime: row.arrival_time,
+            villaRoom: row.villa_room,
+            adults: Number(row.adults || 1),
+            children: Number(row.children || 0),
+            pets: Number(row.pets || 0),
+            status: row.status,
+            idProof: privateRow.id_proof,
+            email: privateRow.email,
+            vehicle: privateRow.vehicle,
+            requests: row.requests,
+            notes: row.notes,
+          });
+        } catch (error) {
+          console.warn("Willow skipped an unusable booking row", row.id, error);
+          return null;
+        }
+      })
+      .filter(Boolean);
   }
 
   function bookingsForDate(isoDate) {
@@ -1560,7 +1973,10 @@
   }
 
   function normalizeBooking(booking) {
-    const checkIn = booking.checkIn;
+    const checkIn = clean(booking.checkIn);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(checkIn)) {
+      throw new Error(`Booking ${booking.id || ""} has no usable check-in date`);
+    }
     const checkOut =
       booking.checkOut && booking.checkOut > checkIn
         ? booking.checkOut
@@ -1568,6 +1984,7 @@
 
     return {
       ...booking,
+      checkIn,
       checkOut,
       adults: Number.isFinite(booking.adults) && booking.adults > 0 ? booking.adults : 1,
       children:
@@ -1792,6 +2209,7 @@
   function toast(message) {
     const element = document.createElement("div");
     element.className = "toast";
+    element.setAttribute("role", "status");
     element.textContent = message;
     document.body.append(element);
     requestAnimationFrame(() => element.classList.add("show"));
@@ -1802,7 +2220,7 @@
   }
 
   function t(key) {
-    return COPY[state.lang][key] || COPY.en[key] || key;
+    return COPY[state.lang]?.[key] || COPY.en[key] || key;
   }
 
   function locale() {
@@ -1861,6 +2279,13 @@
       hour: "numeric",
       minute: "2-digit",
     }).format(date);
+  }
+
+  function formatClock(milliseconds) {
+    return new Intl.DateTimeFormat(locale(), {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(milliseconds));
   }
 
   function checkInTimeText(booking) {
