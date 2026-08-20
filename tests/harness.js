@@ -153,6 +153,9 @@ function startApp({ bookings = [], lang = "en", supabase = null, session = null 
       `const ADMIN_PASSWORD_HASH = ${credentialHash(TEST_PASSWORD)};`,
     );
   window.eval(fs.readFileSync(path.join(ROOT, "supabase-config.js"), "utf8"));
+
+  // Always state the config a spec wants. Without this the specs would quietly
+  // depend on whatever project the deployed supabase-config.js happens to name.
   let stub = null;
   if (supabase) {
     stub = createSupabaseStub(supabase);
@@ -164,6 +167,8 @@ function startApp({ bookings = [], lang = "en", supabase = null, session = null 
       adminEmail: "owner@example.com",
       ...(supabase.config || {}),
     };
+  } else {
+    window.WILLOW_SUPABASE_CONFIG = { url: "", anonKey: "", adminUsername: "Venu", adminEmail: "" };
   }
   window.eval(source);
 
