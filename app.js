@@ -101,6 +101,9 @@
       adminLoginError: "యూజర్ పేరు లేదా పాస్‌వర్డ్ తప్పు",
       adminPassword: "పాస్‌వర్డ్",
       adminEmailMissing: "Supabase adminEmail సెట్ చేయాలి",
+      adminEmailProviderOff: "Supabase లో ఈమెయిల్ లాగిన్ ఆన్ చేయాలి",
+      adminEmailUnconfirmed: "ఓనర్ ఈమెయిల్ ఇంకా కన్ఫర్మ్ కాలేదు",
+      adminRateLimited: "చాలా ప్రయత్నాలు. కాసేపు ఆగి మళ్లీ ప్రయత్నించండి.",
       adminRequired: "బుకింగ్ మార్చడానికి అడ్మిన్ లాగిన్ అవసరం",
       adminRoleMissing: "ఈ యూజర్‌కు ఓనర్ అనుమతి లేదు",
       adminUsername: "యూజర్ పేరు",
@@ -193,6 +196,9 @@
       adminLoginError: "Wrong username or password",
       adminPassword: "Password",
       adminEmailMissing: "Set adminEmail in supabase-config.js",
+      adminEmailProviderOff: "Email sign-in is switched off in Supabase",
+      adminEmailUnconfirmed: "The owner email has not been confirmed in Supabase",
+      adminRateLimited: "Too many attempts. Wait a moment and try again.",
       adminRequired: "Admin login is required to change bookings",
       adminRoleMissing: "This user is not allowed as owner",
       adminUsername: "Username",
@@ -880,7 +886,7 @@
       email: state.remoteConfig.adminEmail,
       password,
     });
-    if (error) throw new Error(t("adminLoginError"));
+    if (error) throw new Error(describeSignInError(error));
 
     const {
       data: { user },
@@ -897,6 +903,28 @@
     state.bookings = await loadBookings();
     render();
     reloadPage();
+  }
+
+  // Reporting every failure as a wrong password hides the ones that are nothing of
+  // the sort, like an Auth user whose email was never confirmed.
+  function describeSignInError(error) {
+    console.warn("Willow owner sign-in failed", error);
+    const code = error?.code || error?.error_code || "";
+    const message = error?.message || "";
+
+    if (code === "invalid_credentials" || /invalid login credentials/i.test(message)) {
+      return t("adminLoginError");
+    }
+    if (code === "email_not_confirmed" || /email not confirmed/i.test(message)) {
+      return t("adminEmailUnconfirmed");
+    }
+    if (code === "email_provider_disabled" || /provider is not enabled/i.test(message)) {
+      return t("adminEmailProviderOff");
+    }
+    if (/over_request_rate_limit|too many requests/i.test(`${code} ${message}`)) {
+      return t("adminRateLimited");
+    }
+    return message || t("adminLoginError");
   }
 
   async function signOutAdmin() {

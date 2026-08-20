@@ -27,6 +27,7 @@ function createSupabaseStub({
   privateRows = [],
   failReads = false,
   missingTables = false,
+  signInError = null,
 } = {}) {
   const server = {
     publicRows: publicRows.map((row) => ({ ...row })),
@@ -93,7 +94,10 @@ function createSupabaseStub({
   const client = {
     auth: {
       async signInWithPassword({ password }) {
-        if (password !== TEST_PASSWORD) return { error: { message: "Invalid login credentials" } };
+        if (signInError) return { error: signInError };
+        if (password !== TEST_PASSWORD) {
+          return { error: { code: "invalid_credentials", message: "Invalid login credentials" } };
+        }
         server.signedIn = true;
         return { error: null };
       },

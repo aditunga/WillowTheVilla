@@ -143,6 +143,29 @@ module.exports = async function run() {
     other.close();
   });
 
+  await test("an unconfirmed owner email says so, not \"wrong password\"", async () => {
+    const unconfirmed = startApp({
+      bookings: [],
+      lang: "en",
+      supabase: {
+        publicRows,
+        privateRows,
+        signInError: { code: "email_not_confirmed", message: "Email not confirmed" },
+      },
+    });
+    await settleBoot(unconfirmed);
+    unconfirmed.click("#adminButton");
+    unconfirmed.$("#adminUsername").value = "Venu";
+    unconfirmed.$("#adminPassword").value = TEST_PASSWORD;
+    unconfirmed.submit("#adminLoginForm");
+    await settleBoot(unconfirmed);
+    const shown = unconfirmed.$("#adminLoginError").textContent;
+    assert(/not been confirmed/.test(shown), shown);
+    assert(!unconfirmed.reloads.length, "reloaded on a failed sign-in");
+    unconfirmed.close();
+    return shown;
+  });
+
   owner.close();
 
   // --- landing back on the page after that reload ---------------------------
