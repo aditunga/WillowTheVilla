@@ -85,8 +85,9 @@
       passcodeTitle: "బుకింగ్ కోడ్",
       passcodeWrong: "కోడ్ తప్పు",
       pets: "పెంపుడు జంతువులు",
-      phone: "ఫోన్ నంబర్",
+      phone: "ఫోన్ నంబర్ (అవసరం లేదు)",
       phonePending: "ఫోన్ నంబర్ అప్డేట్ చేయాలి",
+      phonePlaceholder: "నంబర్ లేకపోతే ఖాళీగా వదిలేయండి",
       platform: "ఎక్కడ బుక్ అయింది",
       quickAdd: "జోడించు",
       requests: "అభ్యర్థనలు",
@@ -154,8 +155,9 @@
       passcodeTitle: "Booking code",
       passcodeWrong: "Wrong code",
       pets: "Pets",
-      phone: "Phone number",
+      phone: "Phone number (optional)",
       phonePending: "Phone number to be updated",
+      phonePlaceholder: "Leave blank if unavailable",
       platform: "Booked through",
       quickAdd: "Add",
       requests: "Requests",
@@ -201,6 +203,7 @@
     passcodeForm: document.getElementById("passcodeForm"),
     passcodeInput: document.getElementById("passcodeInput"),
     passcodeOverlay: document.getElementById("passcodeOverlay"),
+    phone: document.getElementById("phone"),
     platform: document.getElementById("platform"),
     prevMonth: document.getElementById("prevMonth"),
     quickAddButton: document.getElementById("quickAddButton"),
@@ -216,6 +219,8 @@
   init();
 
   function init() {
+    els.phone.required = false;
+    els.phone.removeAttribute("required");
     state.bookings = loadBookings();
     populateStaticSelects();
     bindEvents();
@@ -383,6 +388,9 @@
     document.documentElement.lang = state.lang;
     document.querySelectorAll("[data-i18n]").forEach((element) => {
       element.textContent = t(element.dataset.i18n);
+    });
+    document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+      element.placeholder = t(element.dataset.i18nPlaceholder);
     });
     els.languageToggle.textContent = state.lang === "te" ? "English" : "తెలుగు";
     renderNotePreview();

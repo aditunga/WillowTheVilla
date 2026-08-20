@@ -12,6 +12,7 @@
 - [x] Add pets to booking entry, display, import, and export.
 - [x] Show Telugu translation preview for common English caretaker notes.
 - [x] Allow bookings without phone number and mark phone as needing update.
+- [x] Label phone number as optional and allow blank phone field at startup.
 - [x] Put the calendar first on mobile and prevent header buttons from clipping.
 - [x] Remove the extra four-image strip below the main villa photo.
 - [x] Use only the second villa photo as the header background.
