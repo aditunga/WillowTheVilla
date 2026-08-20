@@ -1502,7 +1502,6 @@
           <span
             class="${shape}"
             style="grid-row: ${segment.row + 1}; grid-column: ${segment.startHalf} / span ${segment.span}; --lane: ${segment.lane}"
-            title="${escapeAttr(`${segment.booking.guestName} - ${source.label}`)}"
           >
             ${segment.labelled ? `<span class="booking-bar-name">${escapeHtml(label)}</span>` : ""}
           </span>
@@ -1542,12 +1541,6 @@
 
 
 
-  function bookingSegment(booking, isoDate) {
-    if (booking.checkIn === isoDate && booking.checkOut === isoDate) return "same-day";
-    if (booking.checkIn === isoDate) return "start";
-    if (booking.checkOut === isoDate) return "end";
-    return "middle";
-  }
 
 
   function renderSelectedDate() {
@@ -1646,11 +1639,11 @@
       : "";
 
     return `
-      <article class="guest-card">
+      <article class="guest-card" aria-labelledby="${escapeAttr(`guest-${booking.id}`)}">
         <div class="guest-top">
           <div class="guest-name">
-            <h3>${escapeHtml(booking.guestName)}</h3>
-            <p class="${phone ? "" : "missing-phone"}">${escapeHtml(phone || t("phonePending"))}</p>
+            <h3 id="${escapeAttr(`guest-${booking.id}`)}">${escapeHtml(booking.guestName)}</h3>
+            <p${phone ? "" : ' class="missing-phone"'}>${escapeHtml(phone || t("phonePending"))}</p>
           </div>
           <div class="guest-chips">
             <span class="source-chip ${source.className}">${escapeHtml(source.label)}</span>

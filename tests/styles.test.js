@@ -80,6 +80,65 @@ module.exports = async function run() {
     return `${grid.value}, gap ${gridGap.value}/${gridRow.value}`;
   });
 
+  await test("no shorthand gap quietly reinstates a column gap on the grid", () => {
+    // A later `.month-grid { gap: 3px }` overrode column-gap:0 at equal specificity
+    // and slid every bar off its day. The shorthand sets both axes.
+    const shorthand = rulesFor("gap").filter((rule) => /\.month-grid\b/.test(rule.selector));
+    assert(
+      !shorthand.length,
+      `shorthand gap on the grid: ${shorthand.map((r) => `${r.selector} { gap: ${r.value} }`).join(" | ")}`,
+    );
+    // The weekday header shares the day pitch, so it must not carry one either.
+    const header = rulesFor("gap").filter(
+      (rule) => /\.weekday-row\b/.test(rule.selector) && rule.value !== "0",
+    );
+    assert(!header.length, `weekday header gap: ${header.map((r) => r.value).join(", ")}`);
+  });
+
+  await test("the bar overlay paints above a selected day", () => {
+    // .day-cell.selected is opaque white at z-index 4; without its own layer the
+    // overlay loses to it and every bar crossing the selected day disappears.
+    const layers = rulesFor("z-index");
+    const overlay = layers.find((rule) => /^\.booking-overlay\b/.test(rule.selector));
+    const selected = layers.find((rule) => /\.day-cell\.selected\b/.test(rule.selector));
+    assert(overlay, "the overlay has no z-index of its own");
+    assert(selected, "no z-index on the selected day");
+    assert(
+      Number(overlay.value) > Number(selected.value),
+      `overlay ${overlay.value} is not above the selected day ${selected.value}`,
+    );
+    const modal = layers.find((rule) => /\.form-modal\b/.test(rule.selector));
+    assert(Number(overlay.value) < Number(modal.value), "the overlay would cover the popups");
+    return `selected ${selected.value} < overlay ${overlay.value} < modal ${modal.value}`;
+  });
+
+  await test("bar labels have enough contrast to read", () => {
+    const luminance = (hex) => {
+      const channels = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+      const linear = channels.map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+    };
+    const ratio = (hex) => (1.05) / (luminance(hex) + 0.05);
+
+    const tokens = {};
+    const rootMatch = /:root\s*\{([\s\S]*?)\}/.exec(css);
+    for (const [, name, value] of rootMatch[1].matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})/g)) {
+      tokens[name] = value;
+    }
+    // Every colour a booking bar can take, all carrying white label text.
+    const surfaces = ["airbnb-ink", "booking", "makemytrip", "direct"];
+    const failures = surfaces
+      .map((name) => ({ name, value: tokens[name], contrast: ratio(tokens[name]) }))
+      .filter((entry) => entry.contrast < 4.5);
+    assert(
+      !failures.length,
+      failures.map((f) => `--${f.name} ${f.value} = ${f.contrast.toFixed(2)}:1`).join(" | "),
+    );
+    return surfaces
+      .map((name) => `${name} ${ratio(tokens[name]).toFixed(2)}`)
+      .join(", ");
+  });
+
   await test("the weekday header does not take a day row's height", () => {
     // Sharing grid-auto-rows with .month-grid left a tall empty band under the
     // weekday labels.

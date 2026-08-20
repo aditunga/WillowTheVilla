@@ -72,5 +72,8 @@
 - [x] Leave neighbouring month days blank so they do not read as bookable.
 - [x] List the arriving guest before the leaving one on a turnover day.
 - [x] Let the booking form scroll when More details is open.
+- [x] Keep booking bars visible on the selected day instead of behind it.
+- [x] Give booking bar labels enough contrast to read.
+- [ ] Darken --line: cell and field borders are 1.30:1 against white and fail WCAG 1.4.11.
 - [ ] Roll the Supabase secret and service_role keys that were shared during setup.
 - [ ] Add authorized booking sync from email/API/channel manager when credentials/export access is available.
