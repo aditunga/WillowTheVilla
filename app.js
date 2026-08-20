@@ -54,6 +54,9 @@
       edit: "సవరించు",
       email: "ఈమెయిల్",
       emptyDate: "ఈ తేదీకి బుకింగ్‌లు లేవు",
+      emptyLoaded: "ఇంకా బుకింగ్‌లు లోడ్ కాలేదు",
+      emptyLoadedHelp:
+        "Airbnb, Booking.com, MakeMyTrip నుండి CSV / ICS ఫైల్ ఇంపోర్ట్ చేయండి లేదా కింద బుకింగ్ జోడించండి.",
       exportDone: "CSV డౌన్‌లోడ్ అయింది",
       guestName: "అతిథి పేరు",
       guests: "అతిథులు",
@@ -106,6 +109,9 @@
       edit: "Edit",
       email: "Email",
       emptyDate: "No bookings for this date",
+      emptyLoaded: "No bookings loaded yet",
+      emptyLoadedHelp:
+        "Import a CSV / ICS file from Airbnb, Booking.com, MakeMyTrip, or add a booking below.",
       exportDone: "CSV downloaded",
       guestName: "Guest name",
       guests: "Guests",
@@ -358,6 +364,18 @@
   }
 
   function renderSelectedDate() {
+    if (!state.bookings.length) {
+      els.selectedTitle.textContent = state.selectedDate ? formatFullDate(state.selectedDate) : t("calendar");
+      els.selectedCount.textContent = "0";
+      els.selectedBookings.innerHTML = `
+        <div class="empty-state">
+          <strong>${escapeHtml(t("emptyLoaded"))}</strong>
+          <span>${escapeHtml(t("emptyLoadedHelp"))}</span>
+        </div>
+      `;
+      return;
+    }
+
     if (!state.selectedDate) {
       els.selectedTitle.textContent = t("calendar");
       els.selectedCount.textContent = "0";

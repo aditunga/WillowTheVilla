@@ -572,8 +572,11 @@ svg {
 }
 
 .empty-state {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 7px;
   min-height: 124px;
   padding: 18px;
   border: 1px dashed var(--line);
@@ -581,6 +584,16 @@ svg {
   color: var(--muted);
   font-weight: 900;
   text-align: center;
+}
+
+.empty-state strong {
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.empty-state span {
+  max-width: 34rem;
+  line-height: 1.35;
 }
 
 .import-card,
