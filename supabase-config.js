@@ -4,5 +4,5 @@ window.WILLOW_SUPABASE_CONFIG = {
   url: "https://gbiuixvzdtftxbuukllm.supabase.co",
   anonKey: "sb_publishable_tk0k4ibgEyJKNwoju5dkLQ_KE0j0fJr",
   adminUsername: "Venu",
-  adminEmail: "",
+  adminEmail: "aditya915@gmail.com",
 };
