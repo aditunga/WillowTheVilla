@@ -68,5 +68,9 @@
 - [x] Show Airbnb monthly earnings history in the owner view, kept out of the caretaker view.
 - [x] Report a refused cloud save on the booking card instead of announcing success.
 - [x] Raise toasts above popups instead of behind them.
+- [x] Draw each stay as one continuous bar over the grid instead of a piece per half cell.
+- [x] Leave neighbouring month days blank so they do not read as bookable.
+- [x] List the arriving guest before the leaving one on a turnover day.
+- [x] Let the booking form scroll when More details is open.
 - [ ] Roll the Supabase secret and service_role keys that were shared during setup.
 - [ ] Add authorized booking sync from email/API/channel manager when credentials/export access is available.

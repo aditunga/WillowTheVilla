@@ -16,6 +16,7 @@
   // SheetJS ships current builds from its own CDN; the npm copy stopped at 0.18.5.
   const EXCEL_LIBRARY_URL = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
   const MAX_PDF_STAY_NIGHTS = 180;
+  const MAX_BOOKING_LANES = 3;
   const FOCUSABLE =
     'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   let eventsBound = false;
@@ -332,6 +333,7 @@
     adminPanelModal: document.getElementById("adminPanelModal"),
     adminPassword: document.getElementById("adminPassword"),
     adminUsername: document.getElementById("adminUsername"),
+    advancedFields: document.querySelector(".advanced-fields"),
     bookingForm: document.getElementById("bookingForm"),
     bookingFormError: document.getElementById("bookingFormError"),
     bookingInternalId: document.getElementById("bookingInternalId"),
@@ -601,6 +603,14 @@
     els.resetButton.addEventListener("click", resetForm);
     els.importButton.addEventListener("click", importSelectedFile);
     els.notes.addEventListener("input", renderNotePreview);
+
+    // Opening the extra fields adds a screenful below the fold; bring it into view.
+    els.advancedFields.addEventListener("toggle", () => {
+      if (!els.advancedFields.open) return;
+      window.setTimeout(() => {
+        els.advancedFields.scrollIntoView?.({ block: "start", behavior: "smooth" });
+      }, 60);
+    });
     els.refreshButton.addEventListener("click", () => refreshFromCloud({ force: true }));
 
     els.monthGrid.addEventListener("keydown", (event) => {
@@ -1378,36 +1388,34 @@
         ? todayIso
         : toISO(firstDay);
 
-    els.monthGrid.innerHTML = Array.from({ length: 42 }, (_, index) => {
+    // Only as many whole weeks as this month needs, so there is never a trailing
+    // row belonging entirely to the next month.
+    const daysInMonth = new Date(firstDay.getFullYear(), month + 1, 0).getDate();
+    const weeks = Math.ceil((firstDay.getDay() + daysInMonth) / 7);
+
+    const cells = Array.from({ length: weeks * 7 }, (_, index) => {
       const date = addDays(gridStart, index);
+
+      // Neighbouring months keep the columns lined up but stay blank; their numbers
+      // read as though they could be booked here.
+      if (date.getMonth() !== month) {
+        return '<span class="day-cell outside" aria-hidden="true"></span>';
+      }
+
       const iso = toISO(date);
       const bookings = bookingsForDate(iso);
-      const segments = bookings.map((booking) => bookingSegment(booking, iso));
-      const bookingPills = bookings
-        .sort((a, b) => segmentOrder(a, iso) - segmentOrder(b, iso))
-        .slice(0, 3)
-        .map((booking) => renderCalendarBooking(booking, iso))
-        .join("");
-      const more =
-        bookings.length > 3
-          ? `<span class="more-count">+${bookings.length - 3}</span>`
-          : "";
+      const countWord = bookings.length === 1 ? t("bookingWord") : t("bookingsWord");
+      const ariaLabel = bookings.length
+        ? `${formatFullDate(iso)}, ${bookings.length} ${countWord}: ${guestNameList(bookings)}`
+        : `${formatFullDate(iso)}, ${bookings.length} ${countWord}`;
       const classes = [
         "day-cell",
-        `dow-${date.getDay()}`,
-        segments.length ? "has-booking" : "",
-        segments.includes("start") || segments.includes("same-day") ? "has-start" : "",
-        segments.includes("middle") ? "has-middle" : "",
-        date.getMonth() !== month ? "outside" : "",
+        bookings.length ? "has-booking" : "",
         iso === todayIso ? "today" : "",
         iso === selected ? "selected" : "",
       ]
         .filter(Boolean)
         .join(" ");
-      const countWord = bookings.length === 1 ? t("bookingWord") : t("bookingsWord");
-      const ariaLabel = bookings.length
-        ? `${formatFullDate(iso)}, ${bookings.length} ${countWord}: ${guestNameList(bookings)}`
-        : `${formatFullDate(iso)}, ${bookings.length} ${countWord}`;
 
       return `
         <button
@@ -1420,10 +1428,98 @@
           aria-label="${escapeHtml(ariaLabel)}"
         >
           <span class="day-number">${date.getDate()}</span>
-          <span class="booking-stack">${bookingPills}${more}</span>
         </button>
       `;
     }).join("");
+
+    els.monthGrid.style.setProperty("--week-count", String(weeks));
+    els.monthGrid.innerHTML = `${cells}<div class="booking-overlay" aria-hidden="true">${renderBookingBars(gridStart, weeks)}</div>`;
+  }
+
+  // One bar per booking per week, laid over the grid so a name can run across the
+  // days it covers. Rendering a piece inside each cell cannot do that: the text is
+  // cut at the cell edge, which is what made the bars look chopped up.
+  function renderBookingBars(gridStart, weeks) {
+    const lastCell = addDays(gridStart, weeks * 7 - 1);
+    const segments = [];
+
+    activeBookings().forEach((booking) => {
+      // A stay occupies the nights slept, so the checkout morning is left free for
+      // whoever arrives that day.
+      const firstNight = parseISO(booking.checkIn);
+      const lastNight = addDays(parseISO(booking.checkOut), -1);
+      if (lastNight < gridStart || firstNight > lastCell) return;
+
+      const from = firstNight < gridStart ? gridStart : firstNight;
+      const to = lastNight > lastCell ? lastCell : lastNight;
+
+      let cursor = from;
+      while (cursor <= to) {
+        const rowEnd = addDays(cursor, 6 - cursor.getDay());
+        const segmentEnd = rowEnd < to ? rowEnd : to;
+        const offset = Math.round((cursor - gridStart) / DAY_MS);
+        segments.push({
+          booking,
+          row: Math.floor(offset / 7),
+          column: cursor.getDay(),
+          span: Math.round((segmentEnd - cursor) / DAY_MS) + 1,
+          opensLeft: cursor.getTime() === firstNight.getTime(),
+          closesRight: segmentEnd.getTime() === lastNight.getTime(),
+        });
+        cursor = addDays(segmentEnd, 1);
+      }
+    });
+
+    return segments
+      .sort((a, b) => a.row - b.row || a.column - b.column || a.span - b.span)
+      .map((segment) => ({ ...segment, lane: assignLane(segments, segment) }))
+      .filter((segment) => segment.lane < MAX_BOOKING_LANES)
+      .map((segment) => {
+        const source = getSource(segment.booking.platform);
+        const guests =
+          Number(segment.booking.adults || 0) + Number(segment.booking.children || 0);
+        const label = `${firstName(segment.booking.guestName) || source.label}${guests > 1 ? ` +${guests - 1}` : ""}`;
+        const shape = [
+          "booking-bar",
+          source.className,
+          segment.opensLeft ? "opens" : "",
+          segment.closesRight ? "closes" : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+        return `
+          <span
+            class="${shape}"
+            style="grid-row: ${segment.row + 1}; grid-column: ${segment.column + 1} / span ${segment.span}; --lane: ${segment.lane}"
+            title="${escapeAttr(`${segment.booking.guestName} - ${source.label}`)}"
+          >
+            <span class="booking-bar-name">${escapeHtml(label)}</span>
+          </span>
+        `;
+      })
+      .join("");
+  }
+
+  // Stacks overlapping stays instead of drawing them on top of one another.
+  function assignLane(segments, segment) {
+    const placed = segments.filter(
+      (other) => other !== segment && other.row === segment.row && other.lane !== undefined,
+    );
+    for (let lane = 0; lane < MAX_BOOKING_LANES; lane += 1) {
+      const clash = placed.some(
+        (other) =>
+          other.lane === lane &&
+          other.column < segment.column + segment.span &&
+          segment.column < other.column + other.span,
+      );
+      if (!clash) {
+        segment.lane = lane;
+        return lane;
+      }
+    }
+    segment.lane = MAX_BOOKING_LANES;
+    return MAX_BOOKING_LANES;
   }
 
   function isoInMonth(iso, monthStart) {
@@ -1434,45 +1530,7 @@
     );
   }
 
-  function renderCalendarBooking(booking, isoDate) {
-    const source = getSource(booking.platform);
-    const segment = bookingSegment(booking, isoDate);
-    const guest = firstName(booking.guestName) || source.label;
-    const guestTotal = Number(booking.adults || 0) + Number(booking.children || 0);
-    const guestSuffix = guestTotal > 1 ? ` +${guestTotal - 1}` : "";
-    // A stay crossing into a new week would otherwise be an anonymous bar, so the
-    // name is repeated on the Sunday that starts the row.
-    const startsRow = parseISO(isoDate).getDay() === 0;
-    const showLabel =
-      segment === "start" || segment === "same-day" || (segment === "middle" && startsRow);
-    const label = `${guest}${guestSuffix}`;
-    const style = segment === "start"
-      ? ` style="--booking-width: ${bookingStartWidth(booking, isoDate)}"`
-      : "";
 
-    return `
-      <span
-        class="booking-pill ${source.className} ${segment}"
-        title="${escapeAttr(`${booking.guestName} - ${source.label}`)}"
-        ${style}
-      >
-        ${showLabel ? `<span class="booking-name">${escapeHtml(label)}</span>` : ""}
-      </span>
-    `;
-  }
-
-  function bookingStartWidth(booking, isoDate) {
-    const start = parseISO(isoDate);
-    const checkout = parseISO(booking.checkOut);
-    const nightsUntilCheckout = Math.max(1, Math.round((checkout - start) / DAY_MS));
-    const remainingDaysInWeek = 6 - start.getDay();
-    const reachesNextRow = nightsUntilCheckout > remainingDaysInWeek;
-    const halfColumns = reachesNextRow
-      ? remainingDaysInWeek * 2 + 1
-      : nightsUntilCheckout * 2;
-    const gapPixels = Math.max(0, Math.ceil(halfColumns / 2) * 8);
-    return `calc(${halfColumns * 100}% + ${gapPixels}px)`;
-  }
 
   function bookingSegment(booking, isoDate) {
     if (booking.checkIn === isoDate && booking.checkOut === isoDate) return "same-day";
@@ -1481,10 +1539,6 @@
     return "middle";
   }
 
-  function segmentOrder(booking, isoDate) {
-    const segment = bookingSegment(booking, isoDate);
-    return { end: 0, middle: 1, "same-day": 1, start: 2 }[segment] ?? 1;
-  }
 
   function renderSelectedDate() {
     if (!state.bookings.length) {
@@ -1516,9 +1570,21 @@
     }
 
     els.selectedBookings.innerHTML = bookings
-      .sort((a, b) => a.checkIn.localeCompare(b.checkIn) || a.guestName.localeCompare(b.guestName))
+      .sort(
+        (a, b) =>
+          dayRole(a, state.selectedDate) - dayRole(b, state.selectedDate) ||
+          a.guestName.localeCompare(b.guestName),
+      )
       .map(renderGuestCard)
       .join("");
+  }
+
+  // On a turnover day the guest arriving matters more than the one already leaving,
+  // so the arrival is listed first.
+  function dayRole(booking, isoDate) {
+    if (booking.checkIn === isoDate) return 0;
+    if (booking.checkOut === isoDate) return 2;
+    return 1;
   }
 
   function renderGuestCard(booking) {

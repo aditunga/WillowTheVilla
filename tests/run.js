@@ -8,6 +8,7 @@ const specs = [
   "./excel-real.test.js",
   "./airbnb-export.test.js",
   "./sync.test.js",
+  "./styles.test.js",
 ];
 
 (async () => {

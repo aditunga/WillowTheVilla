@@ -28,8 +28,23 @@ module.exports = async function run() {
   const { $, $$ } = app;
   const test = createSuite("caretaker view");
 
-  await test("calendar renders a six week grid", () => {
-    assert($$("#monthGrid [data-date]").length === 42, "cells");
+  await test("the grid shows this month only, in whole weeks", () => {
+    const cells = $$("#monthGrid .day-cell");
+    const days = $$("#monthGrid [data-date]");
+    assert(cells.length % 7 === 0, `${cells.length} cells is not whole weeks`);
+
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    assert(days.length === daysInMonth, `${days.length} day cells for a ${daysInMonth} day month`);
+
+    // Neighbouring months are spacers: no number, nothing to tap.
+    const spacers = $$("#monthGrid .day-cell.outside");
+    assert(cells.length === days.length + spacers.length, "unexpected cells");
+    spacers.forEach((cell) => {
+      assert(!cell.textContent.trim(), `spacer shows "${cell.textContent.trim()}"`);
+      assert(!cell.hasAttribute("data-date"), "spacer is still tappable");
+    });
+    return `${days.length} days + ${spacers.length} spacers = ${cells.length}`;
   });
 
   await test("sync line reports local-only storage", () => {
@@ -109,20 +124,28 @@ module.exports = async function run() {
     assert($("#searchInput").placeholder.startsWith("Guest name"), $("#searchInput").placeholder);
   });
 
-  await test("every visible bar carries a readable name", () => {
+  await test("every bar is one span with a name on it", () => {
     app.click("#todayButton");
-    const pills = $$("#monthGrid .booking-pill");
-    assert(pills.length, "no bars drawn");
-    assert(!$$("#monthGrid .booking-avatar").length, "avatar still taking room from the name");
-
-    const starts = $$("#monthGrid .booking-pill.start, #monthGrid .booking-pill.same-day");
-    assert(starts.length, "no arrival bars");
-    starts.forEach((pill) => {
-      const name = pill.querySelector(".booking-name");
-      assert(name, `arrival bar with no name: ${pill.className}`);
+    const bars = $$("#monthGrid .booking-overlay .booking-bar");
+    assert(bars.length, "no bars drawn");
+    bars.forEach((bar) => {
+      const name = bar.querySelector(".booking-bar-name");
+      assert(name, `bar with no name: ${bar.className}`);
       assert(name.textContent.trim().length >= 2, `name too short: "${name.textContent}"`);
+      assert(/grid-column:\s*\d+\s*\/\s*span\s*\d+/.test(bar.getAttribute("style")), bar.getAttribute("style"));
     });
-    return `${starts.length} arrival bars, all named`;
+    return `${bars.length} bars, each one span with a name`;
+  });
+
+  await test("a stay covers the nights slept, leaving the checkout day free", () => {
+    // Ravi is day(-1) to day(2): two nights on the grid, so one bar spanning them.
+    const bars = $$("#monthGrid .booking-overlay .booking-bar").filter((bar) =>
+      /Ravi/.test(bar.textContent),
+    );
+    assert(bars.length === 1, `${bars.length} bars for one stay`);
+    const span = Number(bars[0].getAttribute("style").match(/span (\d+)/)[1]);
+    assert(span === 3, `spans ${span} cells, expected 3 nights`);
+    return `one bar spanning ${span} nights`;
   });
 
   await test("a stay running into the next week is named again on the Sunday", () => {
@@ -136,16 +159,19 @@ module.exports = async function run() {
         villaRoom: "Willow Villa",
       }],
     });
-    const sundayMiddles = long.$$("#monthGrid .day-cell.dow-0 .booking-pill.middle");
-    assert(sundayMiddles.length >= 1, "no week continuation bar found");
-    sundayMiddles.forEach((pill) => {
-      const name = pill.querySelector(".booking-name");
-      assert(name, "week continuation bar has no name");
-      assert(name.textContent.includes("Sateesan"), `named "${name.textContent}"`);
+    const bars = long.$$("#monthGrid .booking-overlay .booking-bar");
+    assert(bars.length >= 2, `${bars.length} bars for a stay crossing a week`);
+    bars.forEach((bar) => {
+      const name = bar.querySelector(".booking-bar-name");
+      assert(name && name.textContent.includes("Sateesan"), `named "${name && name.textContent}"`);
     });
-    const named = sundayMiddles[0].querySelector(".booking-name").textContent;
+    // Only the true ends are rounded; the week break is left square so it reads as
+    // one continuing stay.
+    assert(bars.filter((bar) => bar.classList.contains("opens")).length === 1, "more than one opening end");
+    assert(bars.filter((bar) => bar.classList.contains("closes")).length === 1, "more than one closing end");
+    const named = bars[0].querySelector(".booking-bar-name").textContent;
     long.close();
-    return `${sundayMiddles.length} continuation bars, first reads "${named}"`;
+    return `${bars.length} row segments, all reading "${named}"`;
   });
 
   await test("overlays follow the visual viewport when a keyboard opens", () => {
@@ -160,6 +186,29 @@ module.exports = async function run() {
     keyboard.close();
     void root;
     return "modal height follows the keyboard";
+  });
+
+  await test("a turnover day lists the arriving guest before the leaving one", () => {
+    // Ravi leaves on day(2); give someone an arrival the same day.
+    const turnover = startApp({
+      lang: "en",
+      bookings: [
+        { id: "out", guestName: "Leaving Guest", phone: "", platform: "airbnb",
+          checkIn: day(0), checkOut: day(2), checkInTime: "14:00", checkoutTime: "11:00",
+          adults: 2, children: 0, pets: 0, status: "confirmed", idProof: "pending",
+          villaRoom: "Willow Villa" },
+        { id: "in", guestName: "Arriving Guest", phone: "", platform: "direct",
+          checkIn: day(2), checkOut: day(4), checkInTime: "14:00", checkoutTime: "11:00",
+          adults: 2, children: 0, pets: 0, status: "confirmed", idProof: "pending",
+          villaRoom: "Willow Villa" },
+      ],
+    });
+    turnover.click(`#monthGrid [data-date="${day(2)}"]`);
+    const names = turnover.$$("#selectedBookings .guest-name h3").map((n) => n.textContent);
+    assert(names.length === 2, `${names.length} cards`);
+    assert(names[0] === "Arriving Guest", `first card is ${names[0]}`);
+    turnover.close();
+    return names.join(" then ");
   });
 
   await test("no uncaught page errors", () => {
