@@ -1261,6 +1261,21 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(31, 122, 83, 0.14);
 }
 
+.form-error {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #efc6bb;
+  border-radius: var(--radius);
+  background: #fff5f2;
+  color: #a43d27;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.form-error[hidden] {
+  display: none;
+}
+
 .form-actions {
   gap: 9px;
   margin-top: 13px;
@@ -1274,7 +1289,9 @@ textarea:focus {
   position: fixed;
   right: 12px;
   bottom: 12px;
-  z-index: 30;
+  /* Above the modals, which sit at 80. A toast raised while a popup is open was
+     rendering behind its overlay and could not be read at all. */
+  z-index: 120;
   max-width: min(360px, calc(100vw - 24px));
   padding: 12px 14px;
   border-radius: var(--radius);

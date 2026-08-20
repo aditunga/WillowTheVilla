@@ -252,6 +252,39 @@ module.exports = async function run() {
     return `server updated to ${saved.guest_name}`;
   });
 
+  await test("a refused save keeps the card open and says so on it", async () => {
+    // Toasts linger for a couple of seconds, so only count ones raised from here on.
+    const toastsBefore = reloaded.$$(".toast").length;
+    reloaded.click("#adminButton");
+    reloaded.click("#adminAddBooking");
+    reloaded.fill("guestName", "Refused Guest");
+    reloaded.fill("checkIn", day(60));
+    reloaded.fill("checkOut", day(62));
+    reloaded.server.signedIn = false; // as a policy or constraint failure would
+    reloaded.submit("#bookingForm");
+    await settleBoot(reloaded);
+
+    assert(!reloaded.$("#formModal").hidden, "form closed on a refused save");
+    assert(!reloaded.$("#bookingFormError").hidden, "no error shown on the card");
+    assert(/Not saved to the cloud/.test(reloaded.$("#bookingFormError").textContent), reloaded.$("#bookingFormError").textContent);
+    assert(reloaded.$("#guestName").value === "Refused Guest", "the typing was thrown away");
+    const raised = reloaded.$$(".toast").slice(toastsBefore).map((node) => node.textContent);
+    assert(!raised.some((text) => /Booking saved/.test(text)), `claimed success: ${raised.join(" | ")}`);
+    return reloaded.$("#bookingFormError").textContent.slice(0, 46);
+  });
+
+  await test("retrying after the server recovers saves and closes the card", async () => {
+    reloaded.server.signedIn = true;
+    reloaded.submit("#bookingForm");
+    await settleBoot(reloaded);
+    assert(reloaded.$("#formModal").hidden, "form still open after a good save");
+    assert(reloaded.$("#bookingFormError").hidden, "error still showing");
+    assert(!reloaded.$("#guestName").value, "form not cleared");
+    const saved = reloaded.server.publicRows.find((row) => row.guest_name === "Refused Guest");
+    assert(saved, "not on the server");
+    return "saved on retry, card cleared and closed";
+  });
+
   await test("a delete removes the row from the server", async () => {
     reloaded.click("#todayButton");
     reloaded.click(`#monthGrid [data-date="${day(10)}"]`);

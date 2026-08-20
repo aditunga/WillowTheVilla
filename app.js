@@ -126,6 +126,7 @@
       confirmDelete: "ఈ బుకింగ్ తొలగించాలా?",
       dateRange: "తేదీలు",
       delete: "తొలగించు",
+      deleted: "బుకింగ్ తొలగించబడింది",
       edit: "సవరించు",
       email: "ఈమెయిల్",
       emptyDate: "ఈ తేదీకి బుకింగ్‌లు లేవు",
@@ -168,6 +169,7 @@
       quickAdd: "జోడించు",
       requests: "అభ్యర్థనలు",
       saveBooking: "సేవ్",
+      saveNotShared: "క్లౌడ్‌లో సేవ్ కాలేదు — ఈ ఫోన్‌లో మాత్రమే ఉంది. మళ్లీ ప్రయత్నించండి.",
       saved: "బుకింగ్ సేవ్ అయింది",
       selectedDate: "ఎంచుకున్న తేదీ",
       status: "స్థితి",
@@ -226,6 +228,7 @@
       confirmDelete: "Delete this booking?",
       dateRange: "Dates",
       delete: "Delete",
+      deleted: "Booking deleted",
       edit: "Edit",
       email: "Email",
       emptyDate: "No bookings for this date",
@@ -268,6 +271,7 @@
       quickAdd: "Add",
       requests: "Requests",
       saveBooking: "Save",
+      saveNotShared: "Not saved to the cloud — kept on this device only. Try again.",
       saved: "Booking saved",
       selectedDate: "Selected date",
       status: "Status",
@@ -329,6 +333,7 @@
     adminPassword: document.getElementById("adminPassword"),
     adminUsername: document.getElementById("adminUsername"),
     bookingForm: document.getElementById("bookingForm"),
+    bookingFormError: document.getElementById("bookingFormError"),
     bookingInternalId: document.getElementById("bookingInternalId"),
     bookingModal: document.getElementById("bookingModal"),
     bookingStatus: document.getElementById("bookingStatus"),
@@ -429,7 +434,7 @@
       if (!field) return;
       // Let the keyboard finish opening before deciding where the field sits.
       window.setTimeout(() => {
-        field.scrollIntoView({ block: "center", behavior: "smooth" });
+        field.scrollIntoView?.({ block: "center", behavior: "smooth" });
       }, 180);
     });
   }
@@ -532,6 +537,7 @@
         state.bookings = state.bookings.filter((item) => item.id !== booking.id);
         await saveBookings({ syncRemote: false });
         render();
+        toast(t("deleted"));
       }
     });
 
@@ -578,9 +584,16 @@
 
       state.selectedDate = booking.checkIn;
       state.currentMonth = startOfMonth(parseISO(booking.checkIn));
-      await saveBookings();
-      resetForm();
+
+      const saved = await saveBookings();
       render();
+      if (!saved.ok) {
+        showFormError(`${t("saveNotShared")} ${saved.error?.message || ""}`.trim());
+        return;
+      }
+
+      clearFormError();
+      resetForm();
       closeFormModal();
       toast(t("saved"));
     });
@@ -806,6 +819,17 @@
 
   function closeBookingModal() {
     closeModal(els.bookingModal);
+  }
+
+  function showFormError(message) {
+    els.bookingFormError.textContent = message;
+    els.bookingFormError.hidden = false;
+    els.bookingFormError.scrollIntoView?.({ block: "nearest" });
+  }
+
+  function clearFormError() {
+    els.bookingFormError.hidden = true;
+    els.bookingFormError.textContent = "";
   }
 
   function openFormModal() {
@@ -1771,6 +1795,7 @@
   }
 
   function resetForm() {
+    clearFormError();
     els.bookingForm.reset();
     els.bookingInternalId.value = "";
     const base = state.selectedDate || toISO(today());
@@ -1863,16 +1888,21 @@
     return caretakerFields;
   }
 
+  // Returns whether the booking actually reached shared storage. Callers decide what
+  // to say; announcing "saved" for a write the server refused is how a booking ends
+  // up on one phone and nowhere else.
   async function saveBookings({ syncRemote = true } = {}) {
     persistBookings(state.bookings);
-    if (!syncRemote || !state.remoteClient || !state.isAdmin) return;
+    if (!syncRemote || !state.remoteClient || !state.isAdmin) return { ok: true };
     try {
       await syncRemoteBookings(state.bookings);
       state.remoteError = "";
+      state.lastSyncedAt = Date.now();
+      return { ok: true };
     } catch (error) {
       state.remoteError = error.message || String(error);
       console.warn("Willow cloud save failed", error);
-      toast(t("syncFailed"));
+      return { ok: false, error };
     }
   }
 

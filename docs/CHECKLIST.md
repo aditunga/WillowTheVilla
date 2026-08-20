@@ -66,5 +66,7 @@
 - [x] Keep popups above the mobile keyboard.
 - [x] Treat the same guest and dates as one booking whatever the import source said.
 - [x] Show Airbnb monthly earnings history in the owner view, kept out of the caretaker view.
+- [x] Report a refused cloud save on the booking card instead of announcing success.
+- [x] Raise toasts above popups instead of behind them.
 - [ ] Roll the Supabase secret and service_role keys that were shared during setup.
 - [ ] Add authorized booking sync from email/API/channel manager when credentials/export access is available.
