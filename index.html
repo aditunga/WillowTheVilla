@@ -17,7 +17,7 @@
     <link rel="icon" href="assets/logo.png" />
     <link rel="apple-touch-icon" href="assets/logo.png" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260821-1730" />
+    <link rel="stylesheet" href="styles.css?v=20260821-1930" />
   </head>
   <body>
     <svg class="sprite" aria-hidden="true" focusable="false">
@@ -163,33 +163,40 @@
               <span data-i18n="platform">ఎక్కడ బుక్ అయింది</span>
               <select id="platform" name="platform" required></select>
             </label>
+            <div class="stay-picker full">
+              <div class="stay-picker-leg">
+                <span data-i18n="checkIn">చెక్-ఇన్</span>
+                <input id="checkIn" name="checkIn" type="date" required />
+                <input id="checkInTime" name="checkInTime" type="time" value="14:00" />
+              </div>
+              <div class="stay-picker-link">
+                <svg aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+                <em id="stayNights"></em>
+              </div>
+              <div class="stay-picker-leg">
+                <span data-i18n="checkOut">చెక్-అవుట్</span>
+                <input id="checkOut" name="checkOut" type="date" required />
+                <input id="checkoutTime" name="checkoutTime" type="time" value="11:00" />
+              </div>
+            </div>
+
+            <div class="guest-counts full">
+              <label>
+                <span data-i18n="adults">పెద్దలు</span>
+                <input id="adults" name="adults" type="number" min="1" value="2" required />
+              </label>
+              <label>
+                <span data-i18n="children">పిల్లలు</span>
+                <input id="children" name="children" type="number" min="0" value="0" />
+              </label>
+              <label>
+                <span data-i18n="pets">పెంపుడు జంతువులు</span>
+                <input id="pets" name="pets" type="number" min="0" value="0" />
+              </label>
+            </div>
             <label>
-              <span data-i18n="checkIn">చెక్-ఇన్</span>
-              <input id="checkIn" name="checkIn" type="date" required />
-            </label>
-            <label>
-              <span data-i18n="checkInTime">చెక్-ఇన్ సమయం</span>
-              <input id="checkInTime" name="checkInTime" type="time" value="14:00" />
-            </label>
-            <label>
-              <span data-i18n="checkOut">చెక్-అవుట్</span>
-              <input id="checkOut" name="checkOut" type="date" required />
-            </label>
-            <label>
-              <span data-i18n="checkoutTime">చెక్-అవుట్ సమయం</span>
-              <input id="checkoutTime" name="checkoutTime" type="time" value="11:00" />
-            </label>
-            <label>
-              <span data-i18n="adults">పెద్దలు</span>
-              <input id="adults" name="adults" type="number" min="1" value="2" required />
-            </label>
-            <label>
-              <span data-i18n="children">పిల్లలు</span>
-              <input id="children" name="children" type="number" min="0" value="0" />
-            </label>
-            <label>
-              <span data-i18n="pets">పెంపుడు జంతువులు</span>
-              <input id="pets" name="pets" type="number" min="0" value="0" />
+              <span data-i18n="amountPaid">చెల్లించిన మొత్తం</span>
+              <input id="amountPaid" name="amountPaid" type="number" min="0" inputmode="decimal" />
             </label>
             <label class="full">
               <span data-i18n="notes">కేర్‌టేకర్ నోట్లు</span>
@@ -198,47 +205,6 @@
             </label>
           </div>
 
-          <details class="advanced-fields">
-            <summary data-i18n="advancedDetails">మరిన్ని వివరాలు</summary>
-            <div class="form-grid">
-              <label>
-                <span data-i18n="bookingId">బుకింగ్ ఐడి</span>
-                <input id="bookingId" name="bookingId" />
-              </label>
-              <label>
-                <span data-i18n="amountPaid">చెల్లించిన మొత్తం</span>
-                <input id="amountPaid" name="amountPaid" type="number" min="0" inputmode="decimal" />
-              </label>
-              <label>
-                <span data-i18n="arrivalTime">రాక సమయం</span>
-                <input id="arrivalTime" name="arrivalTime" type="time" />
-              </label>
-              <label>
-                <span data-i18n="villaRoom">విల్లా/గది</span>
-                <input id="villaRoom" name="villaRoom" value="Willow Villa" />
-              </label>
-              <label>
-                <span data-i18n="status">స్థితి</span>
-                <select id="bookingStatus" name="bookingStatus" required></select>
-              </label>
-              <label>
-                <span data-i18n="idProof">ఐడీ ప్రూఫ్</span>
-                <select id="idProof" name="idProof" required></select>
-              </label>
-              <label>
-                <span data-i18n="email">ఈమెయిల్</span>
-                <input id="email" name="email" type="email" autocomplete="email" />
-              </label>
-              <label>
-                <span data-i18n="vehicle">వాహనం నంబర్</span>
-                <input id="vehicle" name="vehicle" />
-              </label>
-              <label class="full">
-                <span data-i18n="requests">అభ్యర్థనలు</span>
-                <textarea id="requests" name="requests" rows="3"></textarea>
-              </label>
-            </div>
-          </details>
 
           <p class="form-error" id="bookingFormError" role="alert" hidden></p>
 
@@ -389,7 +355,7 @@
       </section>
     </div>
 
-    <script src="supabase-config.js?v=20260821-1730"></script>
-    <script src="app.js?v=20260821-1730"></script>
+    <script src="supabase-config.js?v=20260821-1930"></script>
+    <script src="app.js?v=20260821-1930"></script>
   </body>
 </html>

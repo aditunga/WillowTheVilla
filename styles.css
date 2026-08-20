@@ -1,5 +1,10 @@
 :root {
   color-scheme: light;
+  accent-color: #1f7a53;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --ring: 0 0 0 3px rgba(31, 122, 83, 0.22);
   --bg: #f6f7f2;
   --paper: #ffffff;
   --surface: #ffffff;
@@ -253,9 +258,10 @@ main {
 }
 
 .primary-button {
-  border-color: var(--willow-2);
-  background: var(--willow-2);
+  border-color: var(--willow);
+  background: linear-gradient(180deg, var(--willow-2), var(--willow));
   color: #fff;
+  box-shadow: 0 5px 14px rgba(20, 93, 59, 0.28);
 }
 
 .danger-button {
@@ -282,6 +288,15 @@ main {
   box-shadow: var(--soft-shadow);
 }
 
+.ghost-button:active,
+.language-toggle:active,
+.square-button:active,
+.primary-button:active,
+.danger-button:active,
+.contact-link:active {
+  transform: translateY(0) scale(0.97);
+}
+
 svg {
   width: 18px;
   height: 18px;
@@ -306,6 +321,7 @@ svg {
 .selected-card,
 .import-card,
 .entry-card {
+  border-radius: var(--radius-lg);
   margin-top: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -569,20 +585,36 @@ svg {
   white-space: nowrap;
 }
 
+/* A little lift on each bar: a highlight along the top edge and a coloured
+   shadow beneath, so bars read as objects sitting on the grid. */
+.booking-bar {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0.08));
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
 .booking-bar.airbnb {
-  background: var(--airbnb-ink);
+  background-color: var(--airbnb-ink);
+  box-shadow: 0 4px 10px rgba(201, 58, 64, 0.32);
 }
 
 .booking-bar.booking {
-  background: var(--booking);
+  background-color: var(--booking);
+  box-shadow: 0 4px 10px rgba(10, 79, 163, 0.32);
 }
 
 .booking-bar.makemytrip {
-  background: var(--makemytrip);
+  background-color: var(--makemytrip);
+  box-shadow: 0 4px 10px rgba(101, 84, 192, 0.32);
 }
 
 .booking-bar.direct {
-  background: var(--direct);
+  background-color: var(--direct);
+  box-shadow: 0 4px 10px rgba(47, 133, 90, 0.32);
+}
+
+.day-cell:hover ~ .booking-overlay .booking-bar,
+.day-cell:focus-visible ~ .booking-overlay .booking-bar {
+  transform: none;
 }
 
 .weekday-row {
@@ -605,10 +637,24 @@ svg {
   margin-inline: 2px;
   padding: 3px 5px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   background: #fff;
   color: var(--ink);
   text-align: left;
+  transition:
+    transform 130ms cubic-bezier(0.2, 0.9, 0.3, 1.2),
+    box-shadow 130ms ease,
+    border-color 130ms ease;
+}
+
+.day-cell:hover {
+  transform: translateY(-1px);
+  border-color: var(--willow-2);
+  box-shadow: 0 5px 14px rgba(20, 33, 27, 0.1);
+}
+
+.day-cell:active {
+  transform: translateY(0) scale(0.985);
 }
 
 /* A spacer that keeps the weekday columns aligned. Deliberately empty. */
@@ -648,7 +694,14 @@ svg {
 }
 
 .day-cell.today .day-number {
-  color: var(--willow);
+  display: grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  margin: -2px 0 0 -3px;
+  border-radius: var(--radius-pill);
+  background: var(--willow);
+  color: #fff;
 }
 
 /* The name is the only label on the bar, so it always gets the whole width and
@@ -699,8 +752,9 @@ svg {
   max-height: 100%;
   overflow: auto;
   margin: 0;
+  border-radius: var(--radius-lg);
   background: #fff;
-  box-shadow: var(--shadow);
+  box-shadow: 0 24px 60px rgba(20, 33, 27, 0.28);
 }
 
 .form-modal-panel {
@@ -948,11 +1002,13 @@ svg {
 
 .guest-card {
   display: grid;
-  gap: 12px;
+  gap: 11px;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #fff;
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, rgba(31, 122, 83, 0.05), rgba(31, 122, 83, 0)),
+    #fff;
 }
 
 .guest-top {
@@ -1029,11 +1085,80 @@ svg {
 .source-chip {
   flex: 0 0 auto;
   min-height: 28px;
-  padding: 5px 9px;
-  border-radius: 999px;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.06));
   color: #fff;
   font-size: 0.76rem;
   font-weight: 950;
+}
+
+/* --- booking form: the stay as one block, with the nights between the dates --- */
+.stay-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 8px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, rgba(31, 122, 83, 0.06), rgba(31, 122, 83, 0)) ,
+    #fff;
+}
+
+.stay-picker-leg {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.stay-picker-leg span {
+  margin: 0;
+  color: var(--willow);
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.stay-picker-leg input {
+  min-height: 40px;
+  padding: 0 9px;
+  border-radius: var(--radius-sm);
+}
+
+.stay-picker-link {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding-bottom: 8px;
+  color: var(--willow-2);
+}
+
+.stay-picker-link svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0.55;
+}
+
+.stay-picker-link em {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.guest-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.guest-counts input {
+  min-height: 40px;
+  text-align: center;
 }
 
 .stay-summary {
@@ -1275,12 +1400,12 @@ svg {
 .form-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 11px;
+  gap: 9px;
 }
 
 label span {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 900;
@@ -1316,21 +1441,30 @@ textarea {
 
 input,
 select {
-  min-height: 46px;
+  min-height: 42px;
   padding: 0 11px;
 }
 
 textarea {
   resize: vertical;
-  min-height: 92px;
-  padding: 10px 11px;
+  min-height: 74px;
+  padding: 9px 11px;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--willow-2);
-  box-shadow: 0 0 0 3px rgba(31, 122, 83, 0.14);
+  box-shadow: var(--ring);
+}
+
+input,
+select,
+textarea {
+  border-radius: var(--radius-sm);
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
 }
 
 .form-error {
@@ -1556,6 +1690,14 @@ textarea:focus {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .day-cell,
+  .day-cell:hover,
+  .day-cell:active,
+  .booking-bar {
+    transform: none;
+    transition: none;
+  }
+
   *,
   *::before,
   *::after {

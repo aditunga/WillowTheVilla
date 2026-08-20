@@ -316,6 +316,7 @@
     remoteNeedsSetup: false,
     remoteReady: null,
     earnings: [],
+    formSeed: null,
     searchTerm: "",
     selectedDate: toISO(today()),
   };
@@ -335,7 +336,6 @@
     adminPanelModal: document.getElementById("adminPanelModal"),
     adminPassword: document.getElementById("adminPassword"),
     adminUsername: document.getElementById("adminUsername"),
-    advancedFields: document.querySelector(".advanced-fields"),
     bookingForm: document.getElementById("bookingForm"),
     bookingFormError: document.getElementById("bookingFormError"),
     bookingInternalId: document.getElementById("bookingInternalId"),
@@ -375,6 +375,7 @@
     resetButton: document.getElementById("resetButton"),
     searchInput: document.getElementById("searchInput"),
     searchResults: document.getElementById("searchResults"),
+    stayNights: document.getElementById("stayNights"),
     selectedBookings: document.getElementById("selectedBookings"),
     selectedCount: document.getElementById("selectedCount"),
     selectedTitle: document.getElementById("selectedTitle"),
@@ -552,7 +553,17 @@
         toast(t("adminRequired"));
         return;
       }
-      const draft = readForm();
+      const edited = readForm();
+      // Merge over whatever the booking already held, so fields this form no
+      // longer shows survive an edit.
+      const previous = currentBooking(edited.id);
+      const draft = {
+        villaRoom: "Willow Villa",
+        // A booking read out of a PDF carries details the short form has no field
+        // for; keep them rather than dropping them at the first save.
+        ...(previous || state.formSeed || {}),
+        ...edited,
+      };
       if (!draft.checkIn || !draft.checkOut || parseISO(draft.checkOut) <= parseISO(draft.checkIn)) {
         toast(t("invalidDates"));
         return;
@@ -597,6 +608,7 @@
       }
 
       clearFormError();
+      state.formSeed = null;
       resetForm();
       closeFormModal();
       toast(t("saved"));
@@ -605,14 +617,10 @@
     els.resetButton.addEventListener("click", resetForm);
     els.importButton.addEventListener("click", importSelectedFile);
     els.notes.addEventListener("input", renderNotePreview);
-
-    // Opening the extra fields adds a screenful below the fold; bring it into view.
-    els.advancedFields.addEventListener("toggle", () => {
-      if (!els.advancedFields.open) return;
-      window.setTimeout(() => {
-        els.advancedFields.scrollIntoView?.({ block: "start", behavior: "smooth" });
-      }, 60);
+    ["checkIn", "checkOut"].forEach((id) => {
+      document.getElementById(id)?.addEventListener("change", renderStayNights);
     });
+
     els.refreshButton.addEventListener("click", () => refreshFromCloud({ force: true }));
 
     els.monthGrid.addEventListener("keydown", (event) => {
@@ -1231,6 +1239,20 @@
     els.earningsNote.textContent = note;
   }
 
+  // The night count sits between the two dates, so the length of the stay is
+  // visible while it is being chosen rather than only after saving.
+  function renderStayNights() {
+    if (!els.stayNights) return;
+    const from = clean(document.getElementById("checkIn")?.value);
+    const to = clean(document.getElementById("checkOut")?.value);
+    if (!from || !to || to <= from) {
+      els.stayNights.textContent = "";
+      return;
+    }
+    const count = Math.max(1, Math.round((parseISO(to) - parseISO(from)) / DAY_MS));
+    els.stayNights.textContent = `${count} ${count === 1 ? t("night") : t("nights")}`;
+  }
+
   function renderNotePreview() {
     const note = clean(els.notes.value);
     const translated = translateCaretakerNote(note);
@@ -1840,46 +1862,63 @@
     populateStatusSelects();
   }
 
+  // The short booking form no longer carries these, but the labels are still used
+  // for display and for import, so fill them only when the controls exist.
   function populateStatusSelects() {
-    const statusValue = els.bookingStatus.value || "confirmed";
-    const idValue = els.idProof.value || "pending";
-
-    els.bookingStatus.innerHTML = STATUS_OPTIONS.map(
-      (option) => `<option value="${option.id}">${escapeHtml(option[state.lang])}</option>`,
-    ).join("");
-    els.idProof.innerHTML = ID_OPTIONS.map(
-      (option) => `<option value="${option.id}">${escapeHtml(option[state.lang])}</option>`,
-    ).join("");
-
-    els.bookingStatus.value = statusValue;
-    els.idProof.value = idValue;
+    const fill = (select, options, fallback) => {
+      if (!select) return;
+      const current = select.value || fallback;
+      select.innerHTML = options
+        .map((option) => `<option value="${option.id}">${escapeHtml(option[state.lang])}</option>`)
+        .join("");
+      select.value = current;
+    };
+    fill(els.bookingStatus, STATUS_OPTIONS, "confirmed");
+    fill(els.idProof, ID_OPTIONS, "pending");
   }
 
+  // Only the fields the form actually carries. Anything else on the booking —
+  // confirmation code, email, vehicle and the rest — is left to the caller to
+  // preserve, so editing a stay through this short form cannot erase them.
   function readForm() {
     const form = new FormData(els.bookingForm);
-    return {
+    const present = (name) => Boolean(els.bookingForm.elements[name]);
+    const draft = {
       id: els.bookingInternalId.value,
       guestName: clean(form.get("guestName")),
       phone: clean(form.get("phone")),
       platform: clean(form.get("platform")),
-      bookingId: clean(form.get("bookingId")),
-      amountPaid: clean(form.get("amountPaid")),
       checkIn: clean(form.get("checkIn")),
       checkInTime: clean(form.get("checkInTime")),
       checkOut: clean(form.get("checkOut")),
       checkoutTime: clean(form.get("checkoutTime")),
-      arrivalTime: clean(form.get("arrivalTime")),
-      villaRoom: clean(form.get("villaRoom")),
       adults: Number(form.get("adults") || 1),
       children: Number(form.get("children") || 0),
       pets: Number(form.get("pets") || 0),
-      status: clean(form.get("bookingStatus")),
-      idProof: clean(form.get("idProof")),
-      email: clean(form.get("email")),
-      vehicle: clean(form.get("vehicle")),
-      requests: clean(form.get("requests")),
       notes: clean(form.get("notes")),
     };
+
+    // Optional fields, included only while the form still offers them.
+    const optional = {
+      amountPaid: "amountPaid",
+      bookingId: "bookingId",
+      arrivalTime: "arrivalTime",
+      villaRoom: "villaRoom",
+      email: "email",
+      vehicle: "vehicle",
+      requests: "requests",
+      status: "bookingStatus",
+      idProof: "idProof",
+    };
+    Object.entries(optional).forEach(([key, field]) => {
+      if (present(field)) draft[key] = clean(form.get(field));
+    });
+
+    return draft;
+  }
+
+  function currentBooking(id) {
+    return state.bookings.find((booking) => booking.id === id) || null;
   }
 
   function fillForm(booking) {
@@ -1905,10 +1944,12 @@
     setValue("requests", booking.requests);
     setValue("notes", booking.notes);
     renderNotePreview();
+    renderStayNights();
   }
 
   function resetForm() {
     clearFormError();
+    state.formSeed = null;
     els.bookingForm.reset();
     els.bookingInternalId.value = "";
     const base = state.selectedDate || toISO(today());
@@ -1925,6 +1966,7 @@
     setValue("idProof", "pending");
     setValue("amountPaid", "");
     renderNotePreview();
+    renderStayNights();
   }
 
   function setValue(id, value) {
@@ -2250,6 +2292,7 @@
     state.currentMonth = startOfMonth(parseISO(booking.checkIn));
     closeImportModal();
     resetForm();
+    state.formSeed = { ...booking, id: "" };
     fillForm({ ...booking, id: "" });
     render();
     openFormModal();

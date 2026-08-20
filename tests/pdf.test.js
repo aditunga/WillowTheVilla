@@ -74,11 +74,9 @@ module.exports = async function run() {
     assert($("#checkIn").value === "2026-09-04", `check-in ${$("#checkIn").value}`);
     assert($("#checkOut").value === "2026-09-07", `check-out ${$("#checkOut").value}`);
     assert($("#platform").value === "airbnb", `platform ${$("#platform").value}`);
-    assert($("#bookingId").value === "HMABC12345", `code ${$("#bookingId").value}`);
     assert($("#adults").value === "3", `adults ${$("#adults").value}`);
     assert($("#children").value === "1", `children ${$("#children").value}`);
     assert($("#phone").value === "+91 98480 12345", `phone ${$("#phone").value}`);
-    assert($("#email").value === "ravi@example.com", `email ${$("#email").value}`);
     assert($("#amountPaid").value === "18500", `amount ${$("#amountPaid").value}`);
     return `${$("#guestName").value}, ${$("#checkIn").value}→${$("#checkOut").value}, ₹${$("#amountPaid").value}`;
   });
@@ -90,7 +88,11 @@ module.exports = async function run() {
     assert(rows.length === 1, `stored ${rows.length}`);
     assert(rows[0].guestName === "Ravi Kumar", rows[0].guestName);
     assert(rows[0].id, "no id assigned");
-    return rows[0].id ? "saved with a fresh id" : "";
+    // The form has no field for these, so they can only survive by being carried
+    // through the save.
+    assert(rows[0].bookingId === "HMABC12345", `confirmation code lost: ${rows[0].bookingId}`);
+    assert(rows[0].email === "ravi@example.com", `email lost: ${rows[0].email}`);
+    return `saved with its confirmation code and email intact`;
   });
 
   await test("a Booking.com confirmation reads dd/mm/yyyy and its own labels", async () => {
@@ -102,7 +104,6 @@ module.exports = async function run() {
     assert($("#adults").value === "2", `adults ${$("#adults").value}`);
     assert($("#pets").value === "1", `pets ${$("#pets").value}`);
     assert($("#amountPaid").value === "9000", `amount ${$("#amountPaid").value}`);
-    assert(/Early check-in/.test($("#requests").value), `requests ${$("#requests").value}`);
     app.click("#closeFormModal");
     return `${$("#checkIn").value}→${$("#checkOut").value}`;
   });

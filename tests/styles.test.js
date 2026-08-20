@@ -204,6 +204,25 @@ module.exports = async function run() {
     assert(!offender, `${offender && offender.selector} sets grid-auto-rows`);
   });
 
+  await test("the booking form states the stay as one block", () => {
+    const picker = /\.stay-picker\s*\{([^}]*)\}/.exec(css);
+    assert(picker, "no stay picker");
+    assert(/grid-template-columns/.test(picker[1]), "the two legs are not laid out together");
+    const counts = /\.guest-counts\s*\{([^}]*)\}/.exec(css);
+    assert(counts && /repeat\(3/.test(counts[1]), "guest counts are not a single row");
+  });
+
+  await test("motion is dropped for anyone who asks for less of it", () => {
+    // Hover lift, press spring and bar transitions were all added at once; each
+    // needs to be answered in the reduced-motion block.
+    const reduced = /@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?)\n\}/.exec(css);
+    assert(reduced, "no reduced-motion block");
+    ["\\.day-cell", "\\.booking-bar"].forEach((selector) => {
+      assert(new RegExp(selector).test(reduced[1]), `${selector} keeps moving`);
+    });
+    assert(/transform:\s*none/.test(reduced[1]), "transforms are not cancelled");
+  });
+
   await test("popups follow the visual viewport", () => {
     const heights = rulesFor("height").filter((rule) => /\.form-modal\b/.test(rule.selector));
     assert(

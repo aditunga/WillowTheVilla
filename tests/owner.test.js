@@ -83,21 +83,50 @@ module.exports = async function run() {
     app.click("#closeFormModal");
   });
 
-  await test("More details collapses when the card is closed", () => {
+  await test("an expanded section collapses when its popup closes", () => {
     app.click("#adminButton");
-    app.click("#adminAddBooking");
-    const details = $(".advanced-fields");
+    const details = $(".earnings-months");
+    assert(details, "no expandable section in the owner panel");
+
     details.open = true;
-    app.click("#closeFormModal");
-    assert(!details.open, "still open after closing the card");
+    app.click("#closeAdminPanel");
+    assert(!details.open, "still open after closing the panel");
 
     // And via Escape, which closes the popup without going through the button.
     app.click("#adminButton");
-    app.click("#adminAddBooking");
     details.open = true;
     app.press(null, "Escape");
     assert(!details.open, "still open after Escape");
     return "collapses both ways";
+  });
+
+  await test("the short form no longer carries the fields it dropped", () => {
+    app.click("#adminButton");
+    app.click("#adminAddBooking");
+    ["bookingId", "arrivalTime", "villaRoom", "bookingStatus", "idProof", "email", "vehicle", "requests"]
+      .forEach((field) => assert(!$(`#${field}`), `#${field} is still on the form`));
+    assert($("#amountPaid"), "the price is missing from the form");
+    app.click("#closeFormModal");
+    return "price kept, the rest gone";
+  });
+
+  await test("editing through the short form keeps the fields it cannot show", async () => {
+    app.click("#todayButton");
+    app.click(`#monthGrid [data-date="${day(1)}"]`);
+    app.click("#selectedBookings [data-action='edit']");
+    // Change a field the form does carry, leaving the name for later tests.
+    app.fill("phone", "+91 90000 22222");
+    app.submit("#bookingForm");
+    await app.settle();
+
+    const saved = app.stored().find((booking) => booking.phone === "+91 90000 22222");
+    assert(saved, "the edit did not save");
+    assert(saved.bookingId === "HMABC123", `confirmation code wiped: ${saved.bookingId}`);
+    assert(saved.email === "ravi@example.com", `email wiped: ${saved.email}`);
+    assert(saved.vehicle === "TS09AB1234", `vehicle wiped: ${saved.vehicle}`);
+    assert(saved.idProof === "collected", `id proof wiped: ${saved.idProof}`);
+    assert(saved.villaRoom === "Willow Villa", `villa wiped: ${saved.villaRoom}`);
+    return "code, email, vehicle, id proof and villa all intact";
   });
 
   await test("owner sees private details and row actions", () => {
