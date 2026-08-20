@@ -79,7 +79,7 @@ insert into public.monthly_earnings (id, platform, month, gross, net, source_not
   ('airbnb:2026-05', 'airbnb', '2026-05-01', 12790.00, 11766.80, 'Airbnb earnings report 1 Jan 2022 - 20 Aug 2026'),
   ('airbnb:2026-06', 'airbnb', '2026-06-01', 0.00, 0.00, 'Airbnb earnings report 1 Jan 2022 - 20 Aug 2026'),
   ('airbnb:2026-07', 'airbnb', '2026-07-01', 40476.40, 37238.29, 'Airbnb earnings report 1 Jan 2022 - 20 Aug 2026'),
-  ('airbnb:2026-08', 'airbnb', '2026-08-01', 38840.00, 35732.80, 'Airbnb earnings report 1 Jan 2022 - 20 Aug 2026');
+  ('airbnb:2026-08', 'airbnb', '2026-08-01', 38840.00, 35732.80, 'Airbnb earnings report 1 Jan 2022 - 20 Aug 2026')
 on conflict (id) do update
   set gross = excluded.gross,
       net = excluded.net,

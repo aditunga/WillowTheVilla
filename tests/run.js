@@ -9,6 +9,7 @@ const specs = [
   "./airbnb-export.test.js",
   "./sync.test.js",
   "./styles.test.js",
+  "./migrations.test.js",
 ];
 
 (async () => {
