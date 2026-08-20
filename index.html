@@ -47,6 +47,9 @@
       <symbol id="icon-lock" viewBox="0 0 24 24">
         <path d="M7 11V8a5 5 0 0 1 10 0v3M6 11h12v10H6z" />
       </symbol>
+      <symbol id="icon-x" viewBox="0 0 24 24">
+        <path d="M18 6 6 18M6 6l12 12" />
+      </symbol>
     </svg>
 
     <div class="site-shell">
@@ -203,17 +206,6 @@
           </form>
         </details>
 
-        <section class="selected-card" aria-labelledby="selectedTitle">
-          <div class="section-title">
-            <div>
-              <p data-i18n="selectedDate">ఎంచుకున్న తేదీ</p>
-              <h2 id="selectedTitle"></h2>
-            </div>
-            <span class="booking-count" id="selectedCount">0</span>
-          </div>
-          <div class="selected-bookings" id="selectedBookings"></div>
-        </section>
-
         <details class="import-card" id="importCard">
           <summary>
             <span data-i18n="importBookings">బుకింగ్‌లు ఇంపోర్ట్ చేయి</span>
@@ -237,6 +229,24 @@
           </button>
         </details>
       </main>
+    </div>
+
+    <div class="booking-modal" id="bookingModal" hidden>
+      <section class="selected-card booking-modal-panel" aria-labelledby="selectedTitle" role="dialog" aria-modal="true">
+        <div class="section-title">
+          <div>
+            <p data-i18n="selectedDate">ఎంచుకున్న తేదీ</p>
+            <h2 id="selectedTitle"></h2>
+          </div>
+          <div class="modal-title-actions">
+            <span class="booking-count" id="selectedCount">0</span>
+            <button class="square-button" id="closeBookingModal" type="button" data-i18n-aria-label="close">
+              <svg><use href="#icon-x"></use></svg>
+            </button>
+          </div>
+        </div>
+        <div class="selected-bookings" id="selectedBookings"></div>
+      </section>
     </div>
 
     <div class="passcode-overlay" id="passcodeOverlay" hidden>

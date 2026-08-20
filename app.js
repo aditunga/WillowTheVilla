@@ -51,6 +51,7 @@
       children: "పిల్లలు",
       clearForm: "క్లియర్",
       clearSelection: "సెలెక్షన్ క్లియర్",
+      close: "మూసివేయి",
       combined: "Airbnb, Booking.com, MakeMyTrip",
       confirmDelete: "ఈ బుకింగ్ తొలగించాలా?",
       dateRange: "తేదీలు",
@@ -77,7 +78,6 @@
       nights: "రాత్రులు",
       noValue: "లేదు",
       noteTeluguPreview: "తెలుగు నోట్",
-      originalNote: "అసలు",
       passcodeCancel: "రద్దు",
       passcodeConfirm: "సేవ్",
       passcodeHelp: "కొత్త బుకింగ్ సేవ్ చేయడానికి 4 అంకెల కోడ్ ఇవ్వండి.",
@@ -121,6 +121,7 @@
       children: "Children",
       clearForm: "Clear",
       clearSelection: "Clear selection",
+      close: "Close",
       combined: "Airbnb, Booking.com, MakeMyTrip",
       confirmDelete: "Delete this booking?",
       dateRange: "Dates",
@@ -147,7 +148,6 @@
       nights: "nights",
       noValue: "None",
       noteTeluguPreview: "Telugu note",
-      originalNote: "Original",
       passcodeCancel: "Cancel",
       passcodeConfirm: "Save",
       passcodeHelp: "Enter the 4-digit code to save a new booking.",
@@ -184,8 +184,10 @@
   const els = {
     bookingForm: document.getElementById("bookingForm"),
     bookingInternalId: document.getElementById("bookingInternalId"),
+    bookingModal: document.getElementById("bookingModal"),
     bookingStatus: document.getElementById("bookingStatus"),
     calendarTitle: document.getElementById("calendarTitle"),
+    closeBookingModal: document.getElementById("closeBookingModal"),
     clearSelectionButton: document.getElementById("clearSelectionButton"),
     entryCard: document.getElementById("entryCard"),
     exportButton: document.getElementById("exportButton"),
@@ -256,6 +258,7 @@
     els.clearSelectionButton.addEventListener("click", () => {
       state.selectedDate = "";
       render();
+      closeBookingModal();
     });
 
     els.languageToggle.addEventListener("click", () => {
@@ -272,7 +275,7 @@
       state.currentMonth = startOfMonth(parseISO(state.selectedDate));
       resetForm();
       render();
-      document.querySelector(".selected-card").scrollIntoView({ block: "start" });
+      openBookingModal();
     });
 
     els.selectedBookings.addEventListener("click", (event) => {
@@ -283,6 +286,7 @@
       if (!booking) return;
 
       if (action.dataset.action === "edit") {
+        closeBookingModal();
         fillForm(booking);
         els.entryCard.open = true;
         els.entryCard.scrollIntoView({ block: "start" });
@@ -348,6 +352,18 @@
     els.passcodeOverlay.addEventListener("click", (event) => {
       if (event.target === els.passcodeOverlay) closePasscode(false);
     });
+    els.bookingModal.addEventListener("click", (event) => {
+      if (event.target === els.bookingModal) closeBookingModal();
+    });
+    els.closeBookingModal.addEventListener("click", closeBookingModal);
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      if (!els.passcodeOverlay.hidden) {
+        closePasscode(false);
+        return;
+      }
+      if (!els.bookingModal.hidden) closeBookingModal();
+    });
     els.quickAddButton.addEventListener("click", () => {
       resetForm();
       els.entryCard.open = true;
@@ -362,7 +378,7 @@
       els.passcodeInput.value = "";
       els.passcodeError.hidden = true;
       els.passcodeOverlay.hidden = false;
-      document.body.classList.add("modal-open");
+      syncModalLock();
       requestAnimationFrame(() => els.passcodeInput.focus());
     });
   }
@@ -372,8 +388,25 @@
     const resolve = passcodeResolve;
     passcodeResolve = null;
     els.passcodeOverlay.hidden = true;
-    document.body.classList.remove("modal-open");
+    syncModalLock();
     resolve(allowed);
+  }
+
+  function openBookingModal() {
+    if (!state.selectedDate) return;
+    els.bookingModal.hidden = false;
+    syncModalLock();
+    requestAnimationFrame(() => els.closeBookingModal.focus({ preventScroll: true }));
+  }
+
+  function closeBookingModal() {
+    els.bookingModal.hidden = true;
+    syncModalLock();
+  }
+
+  function syncModalLock() {
+    const hasOpenModal = !els.passcodeOverlay.hidden || !els.bookingModal.hidden;
+    document.body.classList.toggle("modal-open", hasOpenModal);
   }
 
   function render() {
@@ -391,6 +424,9 @@
     });
     document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
       element.placeholder = t(element.dataset.i18nPlaceholder);
+    });
+    document.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
+      element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
     });
     els.languageToggle.textContent = state.lang === "te" ? "English" : "తెలుగు";
     renderNotePreview();
@@ -611,7 +647,7 @@
     const translated = translateCaretakerNote(original);
     if (translated === original) return original;
 
-    return `${translated}\n${t("originalNote")}: ${original}`;
+    return translated;
   }
 
   function translateCaretakerNote(note) {
