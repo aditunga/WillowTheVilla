@@ -35,4 +35,5 @@
 - [x] Add optional Supabase shared booking storage so all phones can see the same data.
 - [x] Split caretaker-safe booking fields from owner-only private and financial fields in Supabase.
 - [x] Add Supabase Auth/RLS SQL setup for owner-only add, edit, delete, import, export, and private details.
+- [x] Keep Add, Import, CSV, Logout, and financial summary inside the password-gated Owner view popup.
 - [ ] Add authorized booking sync from email/API/channel manager when credentials/export access is available.

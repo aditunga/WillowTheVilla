@@ -724,9 +724,9 @@
 
   function renderAdminUi() {
     document.body.classList.toggle("admin-mode", state.isAdmin);
-    els.quickAddButton.hidden = !state.isAdmin;
-    els.openImportModal.hidden = !state.isAdmin;
-    els.exportButton.hidden = !state.isAdmin;
+    els.quickAddButton.hidden = true;
+    els.openImportModal.hidden = true;
+    els.exportButton.hidden = true;
     els.adminButtonLabel.textContent = state.isAdmin ? t("ownerView") : t("admin");
   }
 
