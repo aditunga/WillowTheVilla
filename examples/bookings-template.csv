@@ -1,2 +1,2 @@
-guestName,phone,platform,bookingId,checkIn,checkOut,arrivalTime,villaRoom,adults,children,pets,status,idProof,email,vehicle,requests,notes
-,,,,,,,,,,,,,,,,
+guestName,phone,platform,bookingId,amountPaid,checkIn,checkInTime,checkOut,checkoutTime,arrivalTime,villaRoom,adults,children,pets,status,idProof,email,vehicle,requests,notes
+,,,,,,,,,,,,,,,,,,,

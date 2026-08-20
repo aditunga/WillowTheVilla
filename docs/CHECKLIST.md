@@ -32,5 +32,7 @@
 - [x] Keep Arrival time and show Checkout time in caretaker booking popup.
 - [x] Add editable check-in time and checkout time fields to the booking popup.
 - [x] Use saved check-in and checkout times in booking details, CSV import, and CSV export.
-- [ ] Add shared booking storage so all phones see the same data.
+- [x] Add optional Supabase shared booking storage so all phones can see the same data.
+- [x] Split caretaker-safe booking fields from owner-only private and financial fields in Supabase.
+- [x] Add Supabase Auth/RLS SQL setup for owner-only add, edit, delete, import, export, and private details.
 - [ ] Add authorized booking sync from email/API/channel manager when credentials/export access is available.

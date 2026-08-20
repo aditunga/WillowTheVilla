@@ -43,7 +43,9 @@
       adminLogin: "అడ్మిన్ లాగిన్",
       adminLoginError: "యూజర్ పేరు లేదా పాస్‌వర్డ్ తప్పు",
       adminPassword: "పాస్‌వర్డ్",
+      adminEmailMissing: "Supabase adminEmail సెట్ చేయాలి",
       adminRequired: "బుకింగ్ మార్చడానికి అడ్మిన్ లాగిన్ అవసరం",
+      adminRoleMissing: "ఈ యూజర్‌కు ఓనర్ అనుమతి లేదు",
       adminUsername: "యూజర్ పేరు",
       airbnb: "Airbnb",
       amountPaid: "చెల్లించిన మొత్తం",
@@ -109,6 +111,7 @@
       selectedDate: "ఎంచుకున్న తేదీ",
       source: "మూలం",
       status: "స్థితి",
+      syncFailed: "క్లౌడ్ సేవ్ కాలేదు. మళ్లీ ప్రయత్నించండి.",
       title: "ఒకే క్యాలెండర్‌లో అన్ని బుకింగ్‌లు",
       today: "ఈరోజు",
       totalBookings: "మొత్తం బుకింగ్‌లు",
@@ -125,7 +128,9 @@
       adminLogin: "Admin login",
       adminLoginError: "Wrong username or password",
       adminPassword: "Password",
+      adminEmailMissing: "Set adminEmail in supabase-config.js",
       adminRequired: "Admin login is required to change bookings",
+      adminRoleMissing: "This user is not allowed as owner",
       adminUsername: "Username",
       airbnb: "Airbnb",
       amountPaid: "Amount paid",
@@ -191,6 +196,7 @@
       selectedDate: "Selected date",
       source: "Source",
       status: "Status",
+      syncFailed: "Cloud save failed. Try again.",
       title: "All bookings in one calendar",
       today: "Today",
       totalBookings: "Total bookings",
@@ -206,6 +212,9 @@
     currentMonth: startOfMonth(today()),
     isAdmin: sessionStorage.getItem(ADMIN_SESSION_KEY) === "true",
     lang: localStorage.getItem(LANGUAGE_KEY) || "te",
+    remoteClient: null,
+    remoteConfig: null,
+    remoteError: "",
     selectedDate: toISO(today()),
   };
 
@@ -268,10 +277,13 @@
 
   init();
 
-  function init() {
+  async function init() {
     els.phone.required = false;
     els.phone.removeAttribute("required");
-    state.bookings = loadBookings();
+    state.remoteConfig = getSupabaseConfig();
+    state.remoteClient = createRemoteClient(state.remoteConfig);
+    if (state.remoteClient) await restoreRemoteSession();
+    state.bookings = await loadBookings();
     populateStaticSelects();
     bindEvents();
     resetForm();
@@ -346,8 +358,13 @@
 
       if (action.dataset.action === "delete") {
         if (!window.confirm(t("confirmDelete"))) return;
+        try {
+          await deleteRemoteBooking(booking.id);
+        } catch {
+          return;
+        }
         state.bookings = state.bookings.filter((item) => item.id !== booking.id);
-        saveBookings();
+        await saveBookings({ syncRemote: false });
         render();
       }
     });
@@ -376,7 +393,7 @@
 
       state.selectedDate = booking.checkIn;
       state.currentMonth = startOfMonth(parseISO(booking.checkIn));
-      saveBookings();
+      await saveBookings();
       resetForm();
       render();
       closeFormModal();
@@ -395,10 +412,22 @@
       }
       openAdminLogin();
     });
-    els.adminLoginForm.addEventListener("submit", (event) => {
+    els.adminLoginForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const username = clean(els.adminUsername.value);
       const password = clean(els.adminPassword.value);
+      if (state.remoteClient) {
+        try {
+          await signInRemoteAdmin(username, password);
+          closeAdminLogin();
+          openAdminPanel();
+        } catch (error) {
+          els.adminLoginError.textContent = error.message || t("adminLoginError");
+          els.adminLoginError.hidden = false;
+          els.adminPassword.select();
+        }
+        return;
+      }
       if (username === ADMIN_USERNAME && credentialHash(password) === ADMIN_PASSWORD_HASH) {
         setAdminMode(true);
         closeAdminLogin();
@@ -424,8 +453,8 @@
       openImportModal();
     });
     els.adminExportCsv.addEventListener("click", exportCsv);
-    els.adminLogout.addEventListener("click", () => {
-      setAdminMode(false);
+    els.adminLogout.addEventListener("click", async () => {
+      await signOutAdmin();
       closeAdminPanel();
     });
     els.adminLoginModal.addEventListener("click", (event) => {
@@ -507,8 +536,9 @@
   }
 
   function openAdminLogin() {
-    els.adminUsername.value = ADMIN_USERNAME;
+    els.adminUsername.value = state.remoteConfig?.adminUsername || ADMIN_USERNAME;
     els.adminPassword.value = "";
+    els.adminLoginError.textContent = t("adminLoginError");
     els.adminLoginError.hidden = true;
     els.adminLoginModal.hidden = false;
     syncModalLock();
@@ -542,6 +572,93 @@
       closeImportModal();
     }
     render();
+  }
+
+  function getSupabaseConfig() {
+    const config = window.WILLOW_SUPABASE_CONFIG || {};
+    const url = clean(config.url);
+    const anonKey = clean(config.anonKey || config.publishableKey);
+    if (!url || !anonKey) return null;
+    return {
+      url,
+      anonKey,
+      adminUsername: clean(config.adminUsername) || ADMIN_USERNAME,
+      adminEmail: clean(config.adminEmail),
+    };
+  }
+
+  function createRemoteClient(config) {
+    if (!config) return null;
+    if (!window.supabase?.createClient) {
+      state.remoteError = "Supabase client library did not load";
+      return null;
+    }
+    return window.supabase.createClient(config.url, config.anonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    });
+  }
+
+  async function restoreRemoteSession() {
+    if (!state.remoteClient) return;
+    try {
+      const {
+        data: { user },
+      } = await state.remoteClient.auth.getUser();
+      state.isAdmin = isRemoteOwner(user);
+      if (state.isAdmin) {
+        sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
+      } else {
+        sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      }
+    } catch (error) {
+      state.remoteError = error.message || String(error);
+      state.isAdmin = false;
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    }
+  }
+
+  async function signInRemoteAdmin(username, password) {
+    if (username !== state.remoteConfig.adminUsername) throw new Error(t("adminLoginError"));
+    if (!state.remoteConfig.adminEmail) throw new Error(t("adminEmailMissing"));
+
+    const { error } = await state.remoteClient.auth.signInWithPassword({
+      email: state.remoteConfig.adminEmail,
+      password,
+    });
+    if (error) throw new Error(t("adminLoginError"));
+
+    const {
+      data: { user },
+      error: userError,
+    } = await state.remoteClient.auth.getUser();
+    if (userError) throw new Error(t("adminLoginError"));
+    if (!isRemoteOwner(user)) {
+      await state.remoteClient.auth.signOut();
+      throw new Error(t("adminRoleMissing"));
+    }
+
+    state.isAdmin = true;
+    sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
+    state.bookings = await loadBookings();
+    render();
+  }
+
+  async function signOutAdmin() {
+    if (state.remoteClient) {
+      await state.remoteClient.auth.signOut();
+    }
+    setAdminMode(false);
+    state.bookings = await loadBookings();
+    render();
+  }
+
+  function isRemoteOwner(user) {
+    const metadata = user?.app_metadata || {};
+    return metadata.willow_role === "owner" || metadata.role === "owner";
   }
 
   function syncModalLock() {
@@ -1059,7 +1176,28 @@
     if (element) element.value = value ?? "";
   }
 
-  function loadBookings() {
+  async function loadBookings() {
+    const localBookings = loadLocalBookings();
+    if (state.remoteClient) {
+      try {
+        const remoteBookings = await fetchRemoteBookings();
+        if (state.isAdmin && !remoteBookings.length && localBookings.length) {
+          await syncRemoteBookings(localBookings);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(localBookings));
+          return localBookings;
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteBookings));
+        state.remoteError = "";
+        return remoteBookings;
+      } catch (error) {
+        state.remoteError = error.message || String(error);
+        console.warn("Willow cloud sync unavailable", error);
+      }
+    }
+    return localBookings;
+  }
+
+  function loadLocalBookings() {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
@@ -1072,8 +1210,130 @@
     return [];
   }
 
-  function saveBookings() {
+  async function saveBookings({ syncRemote = true } = {}) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.bookings));
+    if (!syncRemote || !state.remoteClient || !state.isAdmin) return;
+    try {
+      await syncRemoteBookings(state.bookings);
+      state.remoteError = "";
+    } catch (error) {
+      state.remoteError = error.message || String(error);
+      console.warn("Willow cloud save failed", error);
+      toast(t("syncFailed"));
+    }
+  }
+
+  async function fetchRemoteBookings() {
+    const { data: publicRows, error: publicError } = await state.remoteClient
+      .from("bookings")
+      .select("*")
+      .order("check_in", { ascending: true })
+      .order("guest_name", { ascending: true });
+    if (publicError) throw publicError;
+
+    const privateRows = state.isAdmin && publicRows.length
+      ? await fetchRemotePrivateRows(publicRows.map((row) => row.id))
+      : [];
+    return mergeRemoteRows(publicRows, privateRows);
+  }
+
+  async function fetchRemotePrivateRows(bookingIds) {
+    const { data, error } = await state.remoteClient
+      .from("booking_private_details")
+      .select("*")
+      .in("booking_id", bookingIds);
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function syncRemoteBookings(bookings) {
+    if (!bookings.length) return;
+    const normalized = bookings.map(normalizeBooking);
+    const publicRows = normalized.map(bookingToPublicRow);
+    const privateRows = normalized.map(bookingToPrivateRow);
+
+    const { error: publicError } = await state.remoteClient
+      .from("bookings")
+      .upsert(publicRows, { onConflict: "id" });
+    if (publicError) throw publicError;
+
+    const { error: privateError } = await state.remoteClient
+      .from("booking_private_details")
+      .upsert(privateRows, { onConflict: "booking_id" });
+    if (privateError) throw privateError;
+  }
+
+  async function deleteRemoteBooking(id) {
+    if (!state.remoteClient || !state.isAdmin) return;
+    const { error } = await state.remoteClient.from("bookings").delete().eq("id", id);
+    if (error) {
+      state.remoteError = error.message || String(error);
+      toast(t("syncFailed"));
+      throw error;
+    }
+  }
+
+  function bookingToPublicRow(booking) {
+    return {
+      id: booking.id,
+      guest_name: booking.guestName,
+      phone: booking.phone || null,
+      platform: booking.platform,
+      check_in: booking.checkIn,
+      check_in_time: booking.checkInTime || DEFAULT_CHECK_IN_TIME,
+      check_out: booking.checkOut,
+      checkout_time: booking.checkoutTime || DEFAULT_CHECKOUT_TIME,
+      arrival_time: booking.arrivalTime || null,
+      villa_room: booking.villaRoom || "Willow Villa",
+      adults: booking.adults || 1,
+      children: booking.children || 0,
+      pets: booking.pets || 0,
+      status: booking.status || "confirmed",
+      requests: booking.requests || null,
+      notes: booking.notes || null,
+    };
+  }
+
+  function bookingToPrivateRow(booking) {
+    const amountText = clean(booking.amountPaid);
+    return {
+      booking_id: booking.id,
+      external_booking_id: booking.bookingId || null,
+      amount_paid: amountText ? bookingAmount(booking) : null,
+      id_proof: booking.idProof || "pending",
+      email: booking.email || null,
+      vehicle: booking.vehicle || null,
+    };
+  }
+
+  function mergeRemoteRows(publicRows, privateRows) {
+    const privateById = new Map(privateRows.map((row) => [row.booking_id, row]));
+    return publicRows.map((row) => {
+      const privateRow = privateById.get(row.id) || {};
+      return normalizeBooking({
+        id: row.id,
+        guestName: row.guest_name,
+        phone: row.phone,
+        platform: row.platform,
+        bookingId: privateRow.external_booking_id,
+        amountPaid: privateRow.amount_paid == null ? "" : String(privateRow.amount_paid),
+        checkIn: row.check_in,
+        checkInTime: row.check_in_time,
+        checkOut: row.check_out,
+        checkoutTime: row.checkout_time,
+        arrivalTime: row.arrival_time,
+        villaRoom: row.villa_room,
+        adults: Number(row.adults || 1),
+        children: Number(row.children || 0),
+        pets: Number(row.pets || 0),
+        status: row.status,
+        idProof: privateRow.id_proof,
+        email: privateRow.email,
+        vehicle: privateRow.vehicle,
+        requests: row.requests,
+        notes: row.notes,
+      });
+    });
   }
 
   function bookingsForDate(isoDate) {
@@ -1120,7 +1380,7 @@
     const result = mergeBookings(imported);
     state.selectedDate = imported[0].checkIn;
     state.currentMonth = startOfMonth(parseISO(state.selectedDate));
-    saveBookings();
+    await saveBookings();
     render();
     closeImportModal();
     toast(`${t("importDone")} (${result.added + result.updated})`);

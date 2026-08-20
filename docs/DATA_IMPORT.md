@@ -1,6 +1,6 @@
 # Booking Data Import
 
-The caretaker website is static and free. It can import files selected on the phone or computer, but it does not store Airbnb, Booking.com, or MakeMyTrip passwords.
+The website is static and free. Admin users can import files selected on the phone or computer, but the site does not store Airbnb, Booking.com, or MakeMyTrip passwords.
 
 ## CSV Import
 
@@ -17,6 +17,9 @@ Required columns:
 Useful optional columns:
 
 - `bookingId`
+- `amountPaid`
+- `checkInTime`
+- `checkoutTime`
 - `arrivalTime`
 - `villaRoom`
 - `adults`
@@ -36,7 +39,7 @@ Valid platform values:
 - `makemytrip`
 - `direct`
 
-No paid amount column is supported.
+`amountPaid` is owner-only. It is imported/exported for Admin users but is not shown to caretakers.
 
 ## ICS Calendar Import
 
@@ -52,4 +55,4 @@ Full automatic guest details and phone numbers require an authorized source:
 - a channel manager/PMS export
 - a secure backend that reads booking confirmation emails
 
-A public static website should not contain platform passwords or secret API keys.
+A public static website should not contain platform passwords or secret API keys. Supabase project URLs and publishable anon keys are allowed in browser code only when Row Level Security policies are enabled.

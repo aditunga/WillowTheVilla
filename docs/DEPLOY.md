@@ -41,6 +41,8 @@ In GitHub:
 5. Select branch `main` and folder `/ (root)`.
 6. Save.
 
+If you want shared bookings and real owner-only financial/private fields, configure Supabase before or after publishing. See `docs/SUPABASE.md`.
+
 ## DuckDNS
 
 DuckDNS is not needed for GitHub Pages. GitHub Pages already gives the free `github.io` website URL.

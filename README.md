@@ -12,7 +12,7 @@ Static, mobile-first booking calendar for Willow The Villa caretakers.
 - Keeps paid amount and owner-only fields out of the caretaker view.
 - Imports CSV files with full guest details.
 - Imports ICS calendar files for platform date ranges.
-- Saves bookings in the browser with `localStorage`.
+- Uses Supabase shared storage when configured, with browser `localStorage` fallback.
 
 ## Free Hosting
 
@@ -34,4 +34,4 @@ To automatically pull full guest details and phone numbers, the website needs an
 
 Calendar export links can usually provide booked dates, but they generally do not provide every guest detail or phone number. The current UI is ready for those details once a secure connector is added later.
 
-See `docs/DATA_IMPORT.md` and `examples/bookings-template.csv`.
+See `docs/SUPABASE.md`, `docs/DATA_IMPORT.md`, and `examples/bookings-template.csv`.
