@@ -151,8 +151,12 @@
       noValue: "లేదు",
       noteTeluguPreview: "తెలుగు నోట్",
       ownerView: "ఓనర్ వ్యూ",
+      grossEarnings: "స్థూల ఆదాయం",
+      monthlyBreakdown: "నెలవారీ వివరాలు",
+      netEarnings: "చేతికి వచ్చినది",
       pets: "పెంపుడు జంతువులు",
       phone: "ఫోన్ నంబర్ (అవసరం లేదు)",
+      platformEarnings: "ప్లాట్‌ఫారమ్ ఆదాయం",
       excelUnreadable: "Excel ఫైల్ చదవలేకపోయాం. ఇంటర్నెట్ ఉందో చూడండి.",
       pdfNoBooking: "PDF లో బుకింగ్ వివరాలు దొరకలేదు",
       pdfStatement: "ఇది ఎర్నింగ్స్ రిపోర్ట్, బుకింగ్ కన్ఫర్మేషన్ కాదు. బుకింగ్ హిస్టరీ కోసం Airbnb ట్రాన్సాక్షన్ CSV వాడండి.",
@@ -247,8 +251,12 @@
       noValue: "None",
       noteTeluguPreview: "Telugu note",
       ownerView: "Owner view",
+      grossEarnings: "Gross",
+      monthlyBreakdown: "Month by month",
+      netEarnings: "Payout",
       pets: "Pets",
       phone: "Phone number (optional)",
+      platformEarnings: "Platform earnings",
       excelUnreadable: "Could not read that Excel file. Check the internet connection.",
       pdfNoBooking: "No booking details found in that PDF",
       pdfStatement: "That is an earnings report, not a booking confirmation. Use the Airbnb transaction CSV for booking history.",
@@ -300,6 +308,7 @@
     remoteError: "",
     remoteNeedsSetup: false,
     remoteReady: null,
+    earnings: [],
     searchTerm: "",
     selectedDate: toISO(today()),
   };
@@ -326,6 +335,10 @@
     calendarTitle: document.getElementById("calendarTitle"),
     closeAdminLogin: document.getElementById("closeAdminLogin"),
     closeAdminPanel: document.getElementById("closeAdminPanel"),
+    earningsBlock: document.getElementById("earningsBlock"),
+    earningsMonths: document.getElementById("earningsMonths"),
+    earningsNote: document.getElementById("earningsNote"),
+    earningsYears: document.getElementById("earningsYears"),
     closeBookingModal: document.getElementById("closeBookingModal"),
     closeFormModal: document.getElementById("closeFormModal"),
     closeImportModal: document.getElementById("closeImportModal"),
@@ -892,6 +905,7 @@
     await restoreOwnerSession();
     const remoteBookings = await loadBookings();
     state.bookings = remoteBookings;
+    if (state.isAdmin) state.earnings = await fetchRemoteEarnings();
     render();
     if (state.isAdmin && takePendingOwnerPanel()) openAdminPanel();
   }
@@ -952,6 +966,7 @@
     state.isAdmin = true;
     rememberOwnerSession(true);
     state.bookings = await loadBookings();
+    state.earnings = await fetchRemoteEarnings();
     render();
     reloadPage();
   }
@@ -983,6 +998,7 @@
       await state.remoteClient.auth.signOut();
     }
     rememberOwnerSession(false);
+    state.earnings = [];
     setAdminMode(false);
     state.bookings = await loadBookings();
     render();
@@ -1117,6 +1133,61 @@
     els.financeBookings.textContent = String(activeBookings.length);
     els.financeNights.textContent = String(bookedNights);
     els.financeAverage.textContent = formatMoney(averageBooking);
+    renderEarnings();
+  }
+
+  function renderEarnings() {
+    const earnings = state.earnings || [];
+    els.earningsBlock.hidden = !earnings.length;
+    if (!earnings.length) return;
+
+    const byYear = new Map();
+    earnings.forEach((row) => {
+      const year = row.month.slice(0, 4);
+      const totals = byYear.get(year) || { gross: 0, net: 0 };
+      totals.gross += row.gross;
+      totals.net += row.net;
+      byYear.set(year, totals);
+    });
+
+    const allTime = earnings.reduce(
+      (sum, row) => ({ gross: sum.gross + row.gross, net: sum.net + row.net }),
+      { gross: 0, net: 0 },
+    );
+
+    const card = (label, totals, extraClass = "") => `
+      <article class="earnings-card ${extraClass}">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(formatMoney(totals.gross))}</strong>
+        <small>${escapeHtml(t("netEarnings"))} ${escapeHtml(formatMoney(totals.net))}</small>
+      </article>
+    `;
+
+    els.earningsYears.innerHTML =
+      card(t("totalRevenue"), allTime, "total") +
+      [...byYear.entries()]
+        .sort((a, b) => b[0].localeCompare(a[0]))
+        .map(([year, totals]) => card(year, totals))
+        .join("");
+
+    const monthFormatter = new Intl.DateTimeFormat(locale(), { month: "short", year: "numeric" });
+    els.earningsMonths.innerHTML = earnings
+      .filter((row) => row.gross || row.net)
+      .sort((a, b) => b.month.localeCompare(a.month))
+      .map((row) => {
+        const [year, month] = row.month.split("-").map(Number);
+        return `
+          <div class="earnings-row">
+            <span>${escapeHtml(monthFormatter.format(new Date(year, month - 1, 1)))}</span>
+            <strong>${escapeHtml(formatMoney(row.gross))}</strong>
+            <small>${escapeHtml(formatMoney(row.net))}</small>
+          </div>
+        `;
+      })
+      .join("");
+
+    const note = earnings.find((row) => row.sourceNote)?.sourceNote || "";
+    els.earningsNote.textContent = note;
   }
 
   function renderNotePreview() {
@@ -1817,6 +1888,28 @@
       ? await fetchRemotePrivateRows(publicRows.map((row) => row.id))
       : [];
     return mergeRemoteRows(publicRows, privateRows);
+  }
+
+  // Owner only: row level security refuses this table to everyone else, so it is
+  // not even requested unless signed in as owner.
+  async function fetchRemoteEarnings() {
+    if (!state.remoteClient || !state.isAdmin) return [];
+    const { data, error } = await state.remoteClient
+      .from("monthly_earnings")
+      .select("*")
+      .order("month", { ascending: true });
+    if (error) {
+      console.warn("Willow earnings unavailable", error);
+      return [];
+    }
+    return (data || []).map((row) => ({
+      id: row.id,
+      platform: row.platform,
+      month: String(row.month).slice(0, 7),
+      gross: Number(row.gross) || 0,
+      net: Number(row.net) || 0,
+      sourceNote: row.source_note || "",
+    }));
   }
 
   async function fetchRemotePrivateRows(bookingIds) {

@@ -34,7 +34,12 @@ That creates:
 
 - `public.bookings`: caretaker-safe shared booking fields.
 - `public.booking_private_details`: owner-only private/financial fields.
+- `public.monthly_earnings`: owner-only month totals from platform earnings reports.
 - RLS policies for public read and owner-only writes.
+
+`supabase/migrations/20260821000000_monthly_earnings.sql` also seeds the Airbnb
+earnings report figures for May 2023 to August 2026. Re-running it updates the
+existing rows rather than duplicating them.
 
 ## 3. Create Owner Login
 

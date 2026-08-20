@@ -792,6 +792,118 @@ svg {
   line-height: 1.1;
 }
 
+.earnings-block {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.earnings-block[hidden] {
+  display: none;
+}
+
+.earnings-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: space-between;
+  margin-bottom: 9px;
+}
+
+.earnings-head h3 {
+  margin: 0;
+  color: var(--willow);
+  font-size: 1rem;
+}
+
+.earnings-note {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.earnings-years {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 8px;
+}
+
+.earnings-card {
+  display: grid;
+  gap: 2px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.earnings-card.total {
+  border-color: rgba(31, 122, 83, 0.35);
+  background: #f2f8f4;
+}
+
+.earnings-card span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.earnings-card strong {
+  color: var(--ink);
+  font-size: 1.02rem;
+  line-height: 1.15;
+}
+
+.earnings-card small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.earnings-months {
+  margin-top: 10px;
+}
+
+.earnings-months summary {
+  padding: 8px 0;
+  color: var(--willow);
+  font-size: 0.8rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.earnings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+.earnings-row:last-child {
+  border-bottom: 0;
+}
+
+.earnings-row span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.earnings-row strong {
+  font-size: 0.82rem;
+}
+
+.earnings-row small {
+  min-width: 72px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-align: right;
+}
+
 .admin-panel-actions {
   display: grid;
   grid-template-columns: 1fr;

@@ -25,6 +25,7 @@ function isoDate(date) {
 function createSupabaseStub({
   publicRows = [],
   privateRows = [],
+  earningsRows = [],
   failReads = false,
   missingTables = false,
   signInError = null,
@@ -32,6 +33,7 @@ function createSupabaseStub({
   const server = {
     publicRows: publicRows.map((row) => ({ ...row })),
     privateRows: privateRows.map((row) => ({ ...row })),
+    earningsRows: earningsRows.map((row) => ({ ...row })),
     signedIn: false,
     ownerRole: "owner",
     upserts: [],
@@ -55,6 +57,11 @@ function createSupabaseStub({
         }
         if (failReads) return { data: null, error: { message: "network down" } };
         if (name === "bookings") return { data: server.publicRows.map((row) => ({ ...row })), error: null };
+        if (name === "monthly_earnings") {
+          // Owner only, exactly as the policy enforces on the real table.
+          if (!server.signedIn) return { data: null, error: { message: "permission denied" } };
+          return { data: server.earningsRows.map((row) => ({ ...row })), error: null };
+        }
         const rows = server.privateRows.filter(
           (row) => !builder.filterIds || builder.filterIds.includes(row.booking_id),
         );

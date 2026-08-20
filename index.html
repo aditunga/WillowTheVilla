@@ -17,7 +17,7 @@
     <link rel="icon" href="assets/logo.png" />
     <link rel="apple-touch-icon" href="assets/logo.png" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260821-0530" />
+    <link rel="stylesheet" href="styles.css?v=20260821-0630" />
   </head>
   <body>
     <svg class="sprite" aria-hidden="true" focusable="false">
@@ -357,6 +357,18 @@
           </article>
         </div>
 
+        <section class="earnings-block" id="earningsBlock" hidden>
+          <div class="earnings-head">
+            <h3 data-i18n="platformEarnings">ప్లాట్‌ఫారమ్ ఆదాయం</h3>
+            <span class="earnings-note" id="earningsNote"></span>
+          </div>
+          <div class="earnings-years" id="earningsYears"></div>
+          <details class="earnings-months">
+            <summary data-i18n="monthlyBreakdown">నెలవారీ వివరాలు</summary>
+            <div id="earningsMonths"></div>
+          </details>
+        </section>
+
         <div class="admin-panel-actions">
           <button class="primary-button" id="adminAddBooking" type="button">
             <svg><use href="#icon-plus"></use></svg>
@@ -375,7 +387,7 @@
       </section>
     </div>
 
-    <script src="supabase-config.js?v=20260821-0530"></script>
-    <script src="app.js?v=20260821-0530"></script>
+    <script src="supabase-config.js?v=20260821-0630"></script>
+    <script src="app.js?v=20260821-0630"></script>
   </body>
 </html>

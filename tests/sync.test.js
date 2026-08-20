@@ -25,6 +25,12 @@ const publicRows = [
   },
 ];
 
+const earningsRows = [
+  { id: "airbnb:2023-05", platform: "airbnb", month: "2023-05-01", gross: "30850.00", net: "28382.00", source_note: "Airbnb earnings report" },
+  { id: "airbnb:2023-06", platform: "airbnb", month: "2023-06-01", gross: "78000.00", net: "71760.00", source_note: "Airbnb earnings report" },
+  { id: "airbnb:2024-01", platform: "airbnb", month: "2024-01-01", gross: "15100.00", net: "13892.00", source_note: "Airbnb earnings report" },
+];
+
 const privateRows = [
   {
     booking_id: "remote-1", external_booking_id: "HMREMOTE1", amount_paid: 24000,
@@ -188,7 +194,7 @@ module.exports = async function run() {
   const reloaded = startApp({
     bookings: [],
     lang: "en",
-    supabase: { publicRows, privateRows },
+    supabase: { publicRows, privateRows, earningsRows },
     session: { [OWNER_SESSION_KEY]: "1", [OWNER_PANEL_KEY]: "1" },
   });
   reloaded.server.signedIn = true;
@@ -199,6 +205,31 @@ module.exports = async function run() {
     assert(!reloaded.$("#adminPanelModal").hidden, "owner panel did not reopen");
     assert(reloaded.$("#financeTotal").textContent.includes("24,000"), reloaded.$("#financeTotal").textContent);
     return reloaded.$("#financeTotal").textContent;
+  });
+
+  await test("the owner panel shows platform earnings by year", () => {
+    const block = reloaded.$("#earningsBlock");
+    assert(!block.hidden, "earnings block hidden for the owner");
+    const cards = reloaded.$$("#earningsYears .earnings-card");
+    // all time + 2023 + 2024
+    assert(cards.length === 3, `${cards.length} cards`);
+    const allTime = cards[0].textContent;
+    assert(/1,23,950/.test(allTime), allTime);
+    const months = reloaded.$$("#earningsMonths .earnings-row");
+    assert(months.length === 3, `${months.length} month rows`);
+    return cards.map((c) => c.querySelector("strong").textContent).join("  |  ");
+  });
+
+  await test("a caretaker never sees the earnings block", async () => {
+    const caretaker = startApp({
+      bookings: [],
+      lang: "en",
+      supabase: { publicRows, privateRows, earningsRows },
+    });
+    await settleBoot(caretaker);
+    assert(caretaker.$("#earningsBlock").hidden, "earnings shown without signing in");
+    assert(!caretaker.$("#earningsYears").textContent.trim(), "earnings rendered anyway");
+    caretaker.close();
   });
 
   await test("the owner sees the private details a caretaker does not", () => {

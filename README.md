@@ -10,6 +10,7 @@ Static, mobile-first booking calendar for Willow The Villa caretakers.
 - Searches bookings by guest name, phone number, or booking ID and jumps to the date.
 - Shows caretakers the guest name, phone number, dates, check-in/checkout times, booking source, arrival time, guest count, requests, and caretaker notes after tapping a date.
 - Shows a live status chip (arriving / staying / checking out / completed) worked out from today's date.
+- Shows the owner a month-by-month platform earnings history, kept out of the caretaker view.
 - Adds an Admin / Owner view for adding bookings, importing, CSV export, edit/delete, full booking details, and financials.
 - Warns the owner before saving a booking that overlaps another stay in the same villa/room.
 - Keeps paid amount and owner-only fields out of the caretaker view.
