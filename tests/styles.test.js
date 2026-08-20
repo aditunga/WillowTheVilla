@@ -155,6 +155,29 @@ module.exports = async function run() {
     return `both read ${grid.value}`;
   });
 
+  await test("the date sits in the corner, clear of the bars", () => {
+    // Bars were covering the day number. The number is pinned to the top-left and
+    // bars stack up from the bottom, so the two cannot meet at any row height.
+    const positions = rulesFor("position");
+    const number = positions.find((rule) => /^\.day-number\b/.test(rule.selector));
+    assert(number && number.value === "absolute", `.day-number position: ${number && number.value}`);
+
+    const top = rulesFor("top").find((rule) => /^\.day-number\b/.test(rule.selector));
+    const left = rulesFor("left").find((rule) => /^\.day-number\b/.test(rule.selector));
+    assert(top && left, "the number is not pinned to a corner");
+
+    const align = rulesFor("align-self").find((rule) => /^\.booking-bar\b/.test(rule.selector));
+    assert(align && align.value === "end", `bars align ${align && align.value}, expected end`);
+
+    // The two lanes a single villa realistically needs must clear the number.
+    const dayHeights = rulesFor("--day-height").map((rule) => parseInt(rule.value, 10));
+    const barHeight = parseInt(rulesFor("min-height").find((r) => /^\.booking-bar\b/.test(r.selector)).value, 10);
+    const numberBottom = parseInt(top.value, 10) + 11;
+    const clashes = dayHeights.filter((height) => height - (3 + 17) - barHeight < numberBottom);
+    assert(!clashes.length, `two bars would cover the date at ${clashes.join("px, ")}px`);
+    return `${dayHeights.join("/")}px rows, bar ${barHeight}px, date clear`;
+  });
+
   await test("the weekday header does not take a day row's height", () => {
     // Sharing grid-auto-rows with .month-grid left a tall empty band under the
     // weekday labels.

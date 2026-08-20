@@ -502,7 +502,7 @@ svg {
   /* Shared with .booking-overlay: the two grids must gap identically or the bars
      drift off their rows. Breakpoints change the variable, never the property. */
   row-gap: var(--row-gap, 4px);
-  grid-auto-rows: minmax(var(--day-height, 62px), auto);
+  grid-auto-rows: minmax(var(--day-height, 66px), auto);
 }
 
 /* Bars live above the cells rather than inside them, so a name can run across the
@@ -522,13 +522,14 @@ svg {
   pointer-events: none;
 }
 
+/* Stacked up from the bottom of the day, leaving the number's corner clear. */
 .booking-bar {
-  align-self: center;
+  align-self: end;
   display: flex;
   align-items: center;
   min-width: 0;
-  min-height: 17px;
-  margin-top: calc(var(--lane, 0) * 18px);
+  min-height: 15px;
+  margin-bottom: calc(3px + var(--lane, 0) * 17px);
   padding: 0 7px;
   color: #fff;
   font-size: clamp(0.6rem, 1.6vw, 0.76rem);
@@ -601,7 +602,7 @@ svg {
   grid-column: span 2;
   min-width: 0;
   margin-inline: 2px;
-  padding: 4px 6px;
+  padding: 3px 5px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #fff;
@@ -633,13 +634,16 @@ svg {
   box-shadow: inset 0 0 0 2px var(--willow);
 }
 
+/* Pinned to the corner so a bar can never sit on top of it, whatever the row
+   height works out to be. */
 .day-number {
-  display: block;
+  position: absolute;
+  top: 3px;
+  left: 5px;
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 900;
   line-height: 1;
-  text-align: left;
 }
 
 .day-cell.today .day-number {
@@ -1324,7 +1328,7 @@ textarea:focus {
   }
 
   .month-grid {
-    --day-height: 58px;
+    --day-height: 60px;
     --row-gap: 3px;
   }
 
@@ -1449,7 +1453,7 @@ textarea:focus {
   }
 
   .month-grid {
-    --day-height: 74px;
+    --day-height: 78px;
   }
 }
 
