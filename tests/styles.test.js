@@ -185,6 +185,17 @@ module.exports = async function run() {
     return `${dayHeights.join("/")}px rows, bar ${barHeight}px + ${lane}px lane, date clear`;
   });
 
+  await test("expandable sections show that they expand", () => {
+    // The native triangle is suppressed, so a chevron has to replace it and turn
+    // when the section opens.
+    const marker = /\.advanced-fields summary::after[^{]*\{([^}]*)\}/.exec(css);
+    assert(marker, "no chevron on the More details summary");
+    assert(/transform/.test(marker[1]), "the chevron never points anywhere");
+    const open = /\.advanced-fields\[open\] summary::after[^{]*\{([^}]*)\}/.exec(css);
+    assert(open && /transform/.test(open[1]), "the chevron does not turn when open");
+    return "chevron turns on open";
+  });
+
   await test("the weekday header does not take a day row's height", () => {
     // Sharing grid-auto-rows with .month-grid left a tall empty band under the
     // weekday labels.

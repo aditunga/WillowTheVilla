@@ -83,6 +83,23 @@ module.exports = async function run() {
     app.click("#closeFormModal");
   });
 
+  await test("More details collapses when the card is closed", () => {
+    app.click("#adminButton");
+    app.click("#adminAddBooking");
+    const details = $(".advanced-fields");
+    details.open = true;
+    app.click("#closeFormModal");
+    assert(!details.open, "still open after closing the card");
+
+    // And via Escape, which closes the popup without going through the button.
+    app.click("#adminButton");
+    app.click("#adminAddBooking");
+    details.open = true;
+    app.press(null, "Escape");
+    assert(!details.open, "still open after Escape");
+    return "collapses both ways";
+  });
+
   await test("owner sees private details and row actions", () => {
     app.click("#todayButton");
     app.click(`#monthGrid [data-date="${day(1)}"]`);

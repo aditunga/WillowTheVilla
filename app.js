@@ -791,6 +791,11 @@
 
   function closeModal(modal) {
     const index = modalStack.findIndex((entry) => entry.modal === modal);
+    // Expandable sections start closed next time the popup opens, rather than
+    // reopening halfway down whatever was last unfolded.
+    modal.querySelectorAll("details[open]").forEach((section) => {
+      section.open = false;
+    });
     modal.hidden = true;
     syncModalLock();
     if (index < 0) return;
