@@ -1,7 +1,6 @@
 (() => {
   const STORAGE_KEY = "willow-the-villa-bookings-v1";
   const LANGUAGE_KEY = "willow-the-villa-language";
-  const ADMIN_SESSION_KEY = "willow-the-villa-admin-session";
   const ADMIN_USERNAME = "Venu";
   const ADMIN_PASSWORD_HASH = 862899077;
   const DEFAULT_CHECK_IN_TIME = "14:00";
@@ -212,7 +211,7 @@
   const state = {
     bookings: [],
     currentMonth: startOfMonth(today()),
-    isAdmin: sessionStorage.getItem(ADMIN_SESSION_KEY) === "true",
+    isAdmin: false,
     lang: localStorage.getItem(LANGUAGE_KEY) || "te",
     remoteClient: null,
     remoteConfig: null,
@@ -571,10 +570,7 @@
 
   function setAdminMode(isAdmin) {
     state.isAdmin = isAdmin;
-    if (isAdmin) {
-      sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
-    } else {
-      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    if (!isAdmin) {
       closeFormModal();
       closeImportModal();
     }
@@ -603,7 +599,7 @@
     return window.supabase.createClient(config.url, config.anonKey, {
       auth: {
         autoRefreshToken: true,
-        persistSession: true,
+        persistSession: false,
         detectSessionInUrl: true,
       },
     });
@@ -614,7 +610,6 @@
     await loadSupabaseLibrary();
     state.remoteClient = createRemoteClient(state.remoteConfig);
     if (!state.remoteClient) return;
-    await withTimeout(restoreRemoteSession(), REMOTE_TIMEOUT_MS, "Supabase session timed out");
     const remoteBookings = await loadBookings();
     state.bookings = remoteBookings;
     render();
@@ -653,25 +648,6 @@
     ]);
   }
 
-  async function restoreRemoteSession() {
-    if (!state.remoteClient) return;
-    try {
-      const {
-        data: { user },
-      } = await state.remoteClient.auth.getUser();
-      state.isAdmin = isRemoteOwner(user);
-      if (state.isAdmin) {
-        sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
-      } else {
-        sessionStorage.removeItem(ADMIN_SESSION_KEY);
-      }
-    } catch (error) {
-      state.remoteError = error.message || String(error);
-      state.isAdmin = false;
-      sessionStorage.removeItem(ADMIN_SESSION_KEY);
-    }
-  }
-
   async function signInRemoteAdmin(username, password) {
     if (username !== state.remoteConfig.adminUsername) throw new Error(t("adminLoginError"));
     if (!state.remoteConfig.adminEmail) throw new Error(t("adminEmailMissing"));
@@ -693,7 +669,6 @@
     }
 
     state.isAdmin = true;
-    sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
     state.bookings = await loadBookings();
     render();
   }
