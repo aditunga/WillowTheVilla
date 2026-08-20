@@ -7,6 +7,8 @@
   const DEFAULT_CHECK_IN_TIME = "14:00";
   const DEFAULT_CHECKOUT_TIME = "11:00";
   const DAY_MS = 24 * 60 * 60 * 1000;
+  const REMOTE_TIMEOUT_MS = 4500;
+  let eventsBound = false;
 
   const SOURCES = [
     {
@@ -280,17 +282,22 @@
   async function init() {
     els.phone.required = false;
     els.phone.removeAttribute("required");
-    state.remoteConfig = getSupabaseConfig();
-    state.remoteClient = createRemoteClient(state.remoteConfig);
-    if (state.remoteClient) await restoreRemoteSession();
-    state.bookings = await loadBookings();
+    state.bookings = loadLocalBookings();
     populateStaticSelects();
     bindEvents();
     resetForm();
     render();
+
+    state.remoteConfig = getSupabaseConfig();
+    hydrateRemote().catch((error) => {
+      state.remoteError = error.message || String(error);
+      console.warn("Willow cloud startup failed", error);
+    });
   }
 
   function bindEvents() {
+    if (eventsBound) return;
+    eventsBound = true;
     els.prevMonth.addEventListener("click", () => {
       state.currentMonth = new Date(
         state.currentMonth.getFullYear(),
@@ -600,6 +607,50 @@
         detectSessionInUrl: true,
       },
     });
+  }
+
+  async function hydrateRemote() {
+    if (!state.remoteConfig) return;
+    await loadSupabaseLibrary();
+    state.remoteClient = createRemoteClient(state.remoteConfig);
+    if (!state.remoteClient) return;
+    await withTimeout(restoreRemoteSession(), REMOTE_TIMEOUT_MS, "Supabase session timed out");
+    const remoteBookings = await loadBookings();
+    state.bookings = remoteBookings;
+    render();
+  }
+
+  function loadSupabaseLibrary() {
+    if (window.supabase?.createClient) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector("script[data-willow-supabase]");
+      if (existing) {
+        existing.addEventListener("load", resolve, { once: true });
+        existing.addEventListener("error", () => reject(new Error("Supabase client library failed")), {
+          once: true,
+        });
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+      script.async = true;
+      script.dataset.willowSupabase = "true";
+      script.addEventListener("load", resolve, { once: true });
+      script.addEventListener("error", () => reject(new Error("Supabase client library failed")), {
+        once: true,
+      });
+      document.head.append(script);
+    });
+  }
+
+  function withTimeout(promise, milliseconds, message) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        window.setTimeout(() => reject(new Error(message)), milliseconds);
+      }),
+    ]);
   }
 
   async function restoreRemoteSession() {
@@ -1180,7 +1231,11 @@
     const localBookings = loadLocalBookings();
     if (state.remoteClient) {
       try {
-        const remoteBookings = await fetchRemoteBookings();
+        const remoteBookings = await withTimeout(
+          fetchRemoteBookings(),
+          REMOTE_TIMEOUT_MS,
+          "Supabase bookings timed out",
+        );
         if (state.isAdmin && !remoteBookings.length && localBookings.length) {
           await syncRemoteBookings(localBookings);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(localBookings));
@@ -1202,7 +1257,17 @@
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed.map(normalizeBooking);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((booking) => {
+              try {
+                return normalizeBooking(booking);
+              } catch {
+                return null;
+              }
+            })
+            .filter(Boolean);
+        }
       } catch {
         localStorage.removeItem(STORAGE_KEY);
       }
