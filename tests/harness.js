@@ -118,7 +118,7 @@ function createSupabaseStub({
   return { server, library: { createClient: () => client } };
 }
 
-function startApp({ bookings = [], lang = "en", supabase = null, session = null } = {}) {
+function startApp({ bookings = [], lang = "en", supabase = null, session = null, visualViewport = null } = {}) {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   const virtualConsole = new VirtualConsole();
   const errors = [];
@@ -144,6 +144,10 @@ function startApp({ bookings = [], lang = "en", supabase = null, session = null 
   // Stands in for what survives a reload in the same tab.
   if (session) {
     Object.entries(session).forEach(([key, value]) => window.sessionStorage.setItem(key, value));
+  }
+
+  if (visualViewport) {
+    Object.defineProperty(window, "visualViewport", { value: visualViewport, configurable: true });
   }
 
   const confirms = [];

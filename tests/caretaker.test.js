@@ -148,6 +148,20 @@ module.exports = async function run() {
     return `${sundayMiddles.length} continuation bars, first reads "${named}"`;
   });
 
+  await test("overlays follow the visual viewport when a keyboard opens", () => {
+    const root = app.window.document.documentElement;
+    // jsdom has no visualViewport, so the app must simply not fall over.
+    assert(!app.errors.length, "viewport tracking threw");
+
+    const viewport = { height: 380, offsetTop: 0, addEventListener() {}, removeEventListener() {} };
+    const keyboard = startApp({ lang: "en", bookings: [], visualViewport: viewport });
+    const styled = keyboard.window.document.documentElement.style;
+    assert(styled.getPropertyValue("--viewport-height") === "380px", styled.getPropertyValue("--viewport-height"));
+    keyboard.close();
+    void root;
+    return "modal height follows the keyboard";
+  });
+
   await test("no uncaught page errors", () => {
     assert(!app.errors.length, app.errors.map((e) => e.message).join(" | "));
   });

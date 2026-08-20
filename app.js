@@ -373,6 +373,8 @@
     resetForm();
     render();
     registerServiceWorker();
+    trackViewport();
+    keepFocusedFieldVisible();
     if (state.isAdmin && takePendingOwnerPanel()) openAdminPanel();
 
     state.remoteReady = hydrateRemote().catch((error) => {
@@ -387,6 +389,35 @@
     if (!window.location.protocol.startsWith("http")) return;
     navigator.serviceWorker?.register("sw.js").catch((error) => {
       console.warn("Willow offline cache unavailable", error);
+    });
+  }
+
+  // Keeps overlays inside the area the on-screen keyboard leaves visible, and keeps
+  // the field being typed into on screen.
+  function trackViewport() {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const apply = () => {
+      const root = document.documentElement;
+      root.style.setProperty("--viewport-height", `${Math.round(viewport.height)}px`);
+      root.style.setProperty("--viewport-offset", `${Math.round(viewport.offsetTop)}px`);
+    };
+
+    viewport.addEventListener("resize", apply);
+    viewport.addEventListener("scroll", apply);
+    apply();
+  }
+
+  function keepFocusedFieldVisible() {
+    document.addEventListener("focusin", (event) => {
+      if (!topModal()) return;
+      const field = event.target.closest("input, select, textarea");
+      if (!field) return;
+      // Let the keyboard finish opening before deciding where the field sits.
+      window.setTimeout(() => {
+        field.scrollIntoView({ block: "center", behavior: "smooth" });
+      }, 180);
     });
   }
 
