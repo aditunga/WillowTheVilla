@@ -430,12 +430,16 @@ svg {
 }
 
 .booking-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(22px, 1fr);
+  gap: 0;
+  align-items: center;
   align-self: stretch;
+  height: 100%;
   min-height: 100%;
   margin-top: 6px;
+  overflow: visible;
 }
 
 .source-bar {
@@ -444,11 +448,14 @@ svg {
 }
 
 .booking-pill {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 3px;
   min-width: 0;
-  min-height: 18px;
+  width: 100%;
+  min-height: 22px;
   padding: 2px 5px;
   color: #fff;
   font-size: clamp(0.56rem, 1.75vw, 0.72rem);
@@ -472,21 +479,37 @@ svg {
 }
 
 .booking-pill.start {
-  margin-top: auto;
-  border-radius: 999px 3px 3px 999px;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  justify-self: stretch;
+  margin-right: -6px;
+  border-radius: 999px 0 0 999px;
 }
 
 .booking-pill.end {
-  border-radius: 3px 999px 999px 3px;
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  justify-self: stretch;
+  margin-left: -6px;
+  border-radius: 0 999px 999px 0;
 }
 
 .booking-pill.middle {
-  margin-block: auto;
-  border-radius: 3px;
+  grid-column: 1 / 3;
+  grid-row: 1;
+  align-self: center;
+  justify-self: stretch;
+  margin-inline: -6px;
+  border-radius: 0;
 }
 
 .booking-pill.same-day {
-  margin-block: auto;
+  grid-column: 1 / 3;
+  grid-row: 1;
+  align-self: center;
+  justify-self: stretch;
   border-radius: 999px;
 }
 
@@ -966,7 +989,13 @@ textarea:focus {
 
   .booking-pill {
     min-height: 17px;
-    padding: 2px 4px;
+    justify-content: center;
+    padding: 2px 3px;
+    font-size: 0.58rem;
+  }
+
+  .booking-pill small {
+    display: none;
   }
 
   .calendar-actions {

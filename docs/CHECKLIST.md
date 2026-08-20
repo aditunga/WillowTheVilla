@@ -15,5 +15,6 @@
 - [x] Put the calendar first on mobile and prevent header buttons from clipping.
 - [x] Remove the extra four-image strip below the main villa photo.
 - [x] Use only the second villa photo as the header background.
+- [x] Split checkout/check-in bars left-half/right-half inside shared calendar dates.
 - [ ] Add shared booking storage so all phones see the same data.
 - [ ] Add authorized booking sync from email/API/channel manager when credentials/export access is available.
