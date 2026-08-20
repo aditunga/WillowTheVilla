@@ -167,15 +167,22 @@ module.exports = async function run() {
     assert(top && left, "the number is not pinned to a corner");
 
     const align = rulesFor("align-self").find((rule) => /^\.booking-bar\b/.test(rule.selector));
-    assert(align && align.value === "end", `bars align ${align && align.value}, expected end`);
+    assert(align && align.value === "center", `bars align ${align && align.value}, expected center`);
 
-    // The two lanes a single villa realistically needs must clear the number.
+    // Centred bars must still clear the date above and fit a second lane below.
     const dayHeights = rulesFor("--day-height").map((rule) => parseInt(rule.value, 10));
     const barHeight = parseInt(rulesFor("min-height").find((r) => /^\.booking-bar\b/.test(r.selector)).value, 10);
+    const lane = parseInt(/\*\s*(\d+)px/.exec(rulesFor("margin-top").find((r) => /^\.booking-bar\b/.test(r.selector)).value)[1], 10);
     const numberBottom = parseInt(top.value, 10) + 11;
-    const clashes = dayHeights.filter((height) => height - (3 + 17) - barHeight < numberBottom);
-    assert(!clashes.length, `two bars would cover the date at ${clashes.join("px, ")}px`);
-    return `${dayHeights.join("/")}px rows, bar ${barHeight}px, date clear`;
+
+    const overlapping = dayHeights.filter((height) => (height - barHeight) / 2 < numberBottom);
+    assert(!overlapping.length, `a bar would cover the date at ${overlapping.join("px, ")}px`);
+
+    const overflowing = dayHeights.filter(
+      (height) => (height - barHeight) / 2 + barHeight + lane > height,
+    );
+    assert(!overflowing.length, `a second bar would spill out of a ${overflowing.join("px, ")}px row`);
+    return `${dayHeights.join("/")}px rows, bar ${barHeight}px + ${lane}px lane, date clear`;
   });
 
   await test("the weekday header does not take a day row's height", () => {

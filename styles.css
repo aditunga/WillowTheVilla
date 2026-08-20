@@ -522,14 +522,15 @@ svg {
   pointer-events: none;
 }
 
-/* Stacked up from the bottom of the day, leaving the number's corner clear. */
+/* Centred in the day now that the date is pinned to the corner and out of the
+   way. A second stay sits directly below the first. */
 .booking-bar {
-  align-self: end;
+  align-self: center;
   display: flex;
   align-items: center;
   min-width: 0;
   min-height: 15px;
-  margin-bottom: calc(3px + var(--lane, 0) * 17px);
+  margin-top: calc(var(--lane, 0) * 17px);
   padding: 0 7px;
   color: #fff;
   font-size: clamp(0.6rem, 1.6vw, 0.76rem);
