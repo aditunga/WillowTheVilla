@@ -32,12 +32,6 @@ module.exports = async function run() {
     assert($$("#monthGrid [data-date]").length === 42, "cells");
   });
 
-  await test("today strip counts arrivals, departures and stays", () => {
-    const counts = $$(".today-tile .today-tile-count").map((node) => node.textContent);
-    assert(counts.join("/") === "1/0/2", `got ${counts.join("/")}`);
-    return counts.join("/");
-  });
-
   await test("sync line reports local-only storage", () => {
     assert($("#refreshButton").hidden, "refresh shown without Supabase");
     assert($("#syncStatus").textContent.length > 0, "empty status");
@@ -111,7 +105,8 @@ module.exports = async function run() {
   await test("language toggle rewrites the page", () => {
     app.click("#languageToggle");
     assert(app.window.document.documentElement.lang === "en", "html lang");
-    assert($(".today-tile-label").textContent === "Arriving today", $(".today-tile-label").textContent);
+    assert($("#todayButton").textContent === "Today", $("#todayButton").textContent);
+    assert($("#searchInput").placeholder.startsWith("Guest name"), $("#searchInput").placeholder);
   });
 
   await test("no uncaught page errors", () => {

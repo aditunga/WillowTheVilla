@@ -165,17 +165,13 @@
       totalRevenue: "మొత్తం ఆదాయం",
       vehicle: "వాహనం నంబర్",
       villaRoom: "విల్లా/గది",
-      arrivingToday: "ఈరోజు వస్తున్నవారు",
       bookingWord: "బుకింగ్",
       bookingsWord: "బుకింగ్‌లు",
-      leavingToday: "ఈరోజు వెళ్తున్నవారు",
-      nobody: "ఎవరూ లేరు",
       overlapConfirm: "అయినా సేవ్ చేయాలా?",
       overlapTitle: "ఈ తేదీలు ఇప్పటికే బుక్ అయ్యాయి",
       searchLabel: "వెతకండి",
       searchNoResults: "ఫలితాలు లేవు",
       searchPlaceholder: "అతిథి పేరు, ఫోన్ లేదా బుకింగ్ ఐడి",
-      stayingTonight: "ఈరాత్రి ఉంటున్నవారు",
       syncLocalOnly: "ఈ ఫోన్‌లో మాత్రమే సేవ్",
       syncOffline: "ఆఫ్‌లైన్ — సేవ్ చేసిన కాపీ",
       syncRefresh: "రిఫ్రెష్",
@@ -259,17 +255,13 @@
       totalRevenue: "Total revenue",
       vehicle: "Vehicle number",
       villaRoom: "Villa/room",
-      arrivingToday: "Arriving today",
       bookingWord: "booking",
       bookingsWord: "bookings",
-      leavingToday: "Leaving today",
-      nobody: "Nobody",
       overlapConfirm: "Save anyway?",
       overlapTitle: "These dates overlap another booking",
       searchLabel: "Search",
       searchNoResults: "No matches",
       searchPlaceholder: "Guest name, phone or booking ID",
-      stayingTonight: "Staying tonight",
       syncLocalOnly: "Saved on this device",
       syncOffline: "Offline — showing saved copy",
       syncRefresh: "Refresh",
@@ -349,7 +341,6 @@
     selectedTitle: document.getElementById("selectedTitle"),
     syncStatus: document.getElementById("syncStatus"),
     todayButton: document.getElementById("todayButton"),
-    todayStrip: document.getElementById("todayStrip"),
     weekdayRow: document.getElementById("weekdayRow"),
   };
 
@@ -569,11 +560,6 @@
       els.searchResults.hidden = true;
     });
 
-    els.todayStrip.addEventListener("click", (event) => {
-      const tile = event.target.closest("[data-goto]");
-      if (!tile) return;
-      goToDate(tile.dataset.goto);
-    });
     els.adminButton.addEventListener("click", () => {
       if (state.isAdmin) {
         openAdminPanel();
@@ -924,7 +910,6 @@
     renderAdminUi();
     renderAdminPanel();
     renderWeekdays();
-    renderTodayStrip();
     renderCalendar();
     renderSelectedDate();
     renderSearchResults();
@@ -984,20 +969,6 @@
     return state.bookings.filter((booking) => booking.status !== "cancelled");
   }
 
-  function arrivalsOn(isoDate) {
-    return activeBookings().filter((booking) => booking.checkIn === isoDate);
-  }
-
-  function departuresOn(isoDate) {
-    return activeBookings().filter((booking) => booking.checkOut === isoDate);
-  }
-
-  function stayingOn(isoDate) {
-    return activeBookings().filter(
-      (booking) => booking.checkIn <= isoDate && isoDate < booking.checkOut,
-    );
-  }
-
   // The stored status goes stale the moment a date passes, so the chip guests and
   // caretakers see is derived from today instead.
   function liveStatus(booking) {
@@ -1010,32 +981,11 @@
     return "confirmed";
   }
 
+  // Reads the day cell out for a screen reader, so only the names matter.
   function guestNameList(bookings) {
-    if (!bookings.length) return t("nobody");
     const names = bookings.map((booking) => firstName(booking.guestName) || getSource(booking.platform).label);
     const shown = names.slice(0, 3).join(", ");
     return names.length > 3 ? `${shown} +${names.length - 3}` : shown;
-  }
-
-  function renderTodayStrip() {
-    const todayIso = toISO(today());
-    const tiles = [
-      { key: "arrivingToday", bookings: arrivalsOn(todayIso), tone: "arrive" },
-      { key: "leavingToday", bookings: departuresOn(todayIso), tone: "leave" },
-      { key: "stayingTonight", bookings: stayingOn(todayIso), tone: "stay" },
-    ];
-
-    els.todayStrip.innerHTML = tiles
-      .map(
-        ({ key, bookings, tone }) => `
-        <button class="today-tile ${tone}" type="button" data-goto="${todayIso}">
-          <span class="today-tile-count">${bookings.length}</span>
-          <span class="today-tile-label">${escapeHtml(t(key))}</span>
-          <span class="today-tile-names">${escapeHtml(guestNameList(bookings))}</span>
-        </button>
-      `,
-      )
-      .join("");
   }
 
   function renderSyncStatus() {
@@ -1909,17 +1859,24 @@
     const headers = rows[headerIndex].map((header) => fieldForHeader(header));
     if (!headers.some(Boolean)) return [];
 
-    return rows
-      .slice(headerIndex + 1)
+    const bodyRows = rows.slice(headerIndex + 1);
+    const dateOrder = detectDateOrder(bodyRows, headers);
+
+    return bodyRows
       .map((row) => {
         const raw = {};
         headers.forEach((field, index) => {
-          if (field) raw[field] = clean(row[index]);
+          // Exports repeat a field across columns (Amount and Gross earnings, say),
+          // so an empty later column must not wipe a value already read.
+          const value = clean(row[index]);
+          if (field && value) raw[field] = value;
         });
 
         const source = sourceFromValue(raw.platform) || fallbackSource;
-        const checkIn = normalizeImportedDate(raw.checkIn);
-        const checkOut = normalizeImportedDate(raw.checkOut);
+        const checkIn = normalizeImportedDate(raw.checkIn, dateOrder);
+        // Airbnb's earnings export gives a start date and a night count, no end date.
+        const checkOut =
+          normalizeImportedDate(raw.checkOut, dateOrder) || checkOutFromNights(checkIn, raw.nights);
         if (!checkIn || !checkOut) return null;
 
         return normalizeBooking({
@@ -2354,6 +2311,13 @@
     return rows;
   }
 
+  function checkOutFromNights(checkIn, nightCount) {
+    if (!checkIn) return "";
+    const stayNights = Math.round(Number(clean(nightCount)));
+    if (!Number.isFinite(stayNights) || stayNights < 1) return "";
+    return toISO(addDays(parseISO(checkIn), stayNights));
+  }
+
   // Platform exports often open with a title or a blank line before the real header.
   function findHeaderRow(rows) {
     const limit = Math.min(rows.length, 20);
@@ -2403,6 +2367,7 @@
         "confirmationcode",
         "voucherno",
         "voucherid",
+        "reference",
       ],
       amountPaid: [
         "amountpaid",
@@ -2417,10 +2382,16 @@
         "revenue",
         "price",
         "bookingamount",
+        "grossearnings",
+        "netearnings",
+        "paidout",
+        "payout",
+        "earnings",
       ],
       checkIn: ["checkin", "checkindate", "arrival", "arrivaldate", "fromdate", "startdate"],
       checkInTime: ["checkintime", "checkinhour", "starttime"],
       checkOut: ["checkout", "checkoutdate", "departure", "departuredate", "todate", "enddate"],
+      nights: ["nights", "noofnights", "numberofnights", "totalnights"],
       checkoutTime: ["checkouttime", "checkouthour", "endtime"],
       arrivalTime: ["arrivaltime", "guestarrivaltime"],
       villaRoom: [
@@ -2444,7 +2415,7 @@
       email: ["email", "emailid", "emailaddress", "guestemail"],
       vehicle: ["vehicle", "vehiclenumber", "carnumber"],
       requests: ["requests", "specialrequests"],
-      notes: ["notes", "caretakernotes", "description"],
+      notes: ["notes", "caretakernotes", "description", "details"],
     };
 
     Object.keys(aliases).forEach((field) => {
@@ -2513,18 +2484,45 @@
     );
   }
 
-  function normalizeImportedDate(value) {
+  function normalizeImportedDate(value, order = "dayFirst") {
     const text = clean(value);
     if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
 
-    const slashMatch = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+    const slashMatch = text.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})$/);
     if (slashMatch) {
-      const [, day, month, year] = slashMatch;
-      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+      const year = slashMatch[3].length === 2 ? `20${slashMatch[3]}` : slashMatch[3];
+      let day = Number(order === "monthFirst" ? slashMatch[2] : slashMatch[1]);
+      let month = Number(order === "monthFirst" ? slashMatch[1] : slashMatch[2]);
+      // This row disproves the assumed order on its own.
+      if (month > 12 && day <= 12) [day, month] = [month, day];
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) return buildIso(year, month, day);
     }
 
     const parsed = new Date(text);
     return Number.isNaN(parsed.getTime()) ? "" : toISO(parsed);
+  }
+
+  // Indian exports write 04/09/2026 as 4 September; Airbnb writes it as 9 April.
+  // Only the data can tell them apart, so scan the date columns for a day past 12.
+  function detectDateOrder(rows, headers) {
+    const dateColumns = headers
+      .map((field, index) => (field === "checkIn" || field === "checkOut" ? index : -1))
+      .filter((index) => index >= 0);
+
+    let dayFirst = 0;
+    let monthFirst = 0;
+    rows.forEach((row) => {
+      dateColumns.forEach((index) => {
+        const match = clean(row[index]).match(/^(\d{1,2})[/.-](\d{1,2})[/.-]\d{2,4}$/);
+        if (!match) return;
+        const first = Number(match[1]);
+        const second = Number(match[2]);
+        if (first > 12 && second <= 12) dayFirst += 1;
+        else if (second > 12 && first <= 12) monthFirst += 1;
+      });
+    });
+
+    return monthFirst > dayFirst ? "monthFirst" : "dayFirst";
   }
 
   function extractPhone(value) {

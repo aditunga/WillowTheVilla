@@ -6,6 +6,7 @@ const specs = [
   "./pdf.test.js",
   "./excel.test.js",
   "./excel-real.test.js",
+  "./airbnb-export.test.js",
 ];
 
 (async () => {

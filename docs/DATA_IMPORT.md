@@ -42,6 +42,28 @@ Valid platform values:
 
 `amountPaid` is owner-only. It is imported/exported for Admin users but is not shown to caretakers.
 
+## Airbnb Earnings / Transaction Export
+
+This is the file to use for booking history. In the Airbnb host account, open
+`Earnings`, then `Get report` / `Transaction history`, choose the year, and download the
+CSV. Each reservation is one row with the confirmation code, guest name, start date,
+nights, listing, and gross earnings.
+
+The Airbnb **Earnings report PDF** is a different file and cannot be used for this. It
+only holds monthly totals, with no guest names, dates, or confirmation codes in it.
+
+Three things about the export are handled automatically:
+
+- Payout and adjustment rows have no stay attached, so they are skipped.
+- Airbnb writes dates month first (`05/10/2023` is 10 May), while Indian exports write
+  them day first. The importer reads the whole date column first and works out which
+  order the file uses, so both import correctly without a setting.
+- When a row has a start date and a night count but no end date, the check-out date is
+  worked out from the nights.
+
+Set the import source to Airbnb before importing, because the export does not name the
+platform in a column.
+
 ## Excel Import
 
 MakeMyTrip hands over bookings as Excel files, so `.xlsx`, `.xlsm`, and older `.xls`

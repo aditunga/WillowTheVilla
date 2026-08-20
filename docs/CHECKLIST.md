@@ -37,7 +37,6 @@
 - [x] Add Supabase Auth/RLS SQL setup for owner-only add, edit, delete, import, export, and private details.
 - [x] Keep Add, Import, CSV, Logout, and financial summary inside the password-gated Owner view popup.
 - [x] Remove the booking source legend because the booking popup already names the source.
-- [x] Add a today strip with arrivals, departures, and guests staying tonight.
 - [x] Add search by guest name, phone number, or booking ID.
 - [x] Warn the owner before saving a booking that overlaps another stay.
 - [x] Show a live status chip worked out from today instead of the stored status.
@@ -49,4 +48,7 @@
 - [x] Add a jsdom test suite covering the caretaker view, owner view, and imports.
 - [x] Import booking confirmation PDFs into the booking form for owner review.
 - [x] Import MakeMyTrip and other Excel exports, matching header names loosely and skipping report title rows.
+- [x] Remove the arriving/leaving/staying strip because the calendar already shows it.
+- [x] Import the Airbnb earnings export: skip payout rows, read US month-first dates, and work out check-out from the night count.
+- [ ] Backfill Airbnb bookings from before 2025, once the per-reservation export is downloaded.
 - [ ] Add authorized booking sync from email/API/channel manager when credentials/export access is available.
