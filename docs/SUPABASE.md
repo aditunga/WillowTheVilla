@@ -20,11 +20,15 @@ The public/publishable Supabase anon key is allowed in browser code. Never put t
 
 ## 2. Run The Schema
 
-Open the Supabase SQL editor and run:
+The SQL lives at `supabase/migrations/20260820000000_willow_bookings.sql`.
 
-```sql
--- paste the contents of supabase/schema.sql
-```
+If the Supabase project is linked to this GitHub repository, the integration picks
+that file up from `supabase/migrations/` and applies it on push. `supabase/config.toml`
+must carry the project reference, which is the part of the project URL before
+`.supabase.co`.
+
+Otherwise open the Supabase SQL editor and paste the contents of that file. It is safe
+to run more than once.
 
 That creates:
 
@@ -52,13 +56,22 @@ Edit `supabase-config.js`:
 ```js
 window.WILLOW_SUPABASE_CONFIG = {
   url: "https://YOUR_PROJECT.supabase.co",
-  anonKey: "YOUR_PUBLISHABLE_OR_ANON_KEY",
+  anonKey: "sb_publishable_...",
   adminUsername: "Venu",
   adminEmail: "OWNER_EMAIL_HERE",
 };
 ```
 
-Commit and push that file. The anon key is not a secret, but the service-role key is secret and must never be added.
+Commit and push that file.
+
+Supabase issues two keys on that page and only one of them belongs here:
+
+- `sb_publishable_...` is the publishable key. It is designed to sit in browser code,
+  and Row Level Security is what actually protects the data. This is the one to use.
+- `sb_secret_...` is the secret key, formerly the service-role key. It bypasses Row
+  Level Security entirely. It must never go in this file, in this repository, or in a
+  chat or screenshot. If it is exposed, roll it in `Project Settings` -> `API Keys`
+  straight away.
 
 ## 5. First Login Migration
 
