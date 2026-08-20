@@ -51,6 +51,8 @@ nights, listing, and gross earnings.
 
 The Airbnb **Earnings report PDF** is a different file and cannot be used for this. It
 only holds monthly totals, with no guest names, dates, or confirmation codes in it.
+Importing one is refused with a message rather than accepted, because the date range in
+its title is not a stay.
 
 Three things about the export are handled automatically:
 

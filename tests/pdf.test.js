@@ -27,6 +27,26 @@ Check-out: 14/09/2026
 Mobile: 98480 11111
 Total amount INR 9,000`;
 
+// Trimmed from the real Airbnb earnings report: title date range, host name, and
+// money, but not one stay in it.
+const EARNINGS_REPORT = `1 January 2022 – 20 August 2026
+Earnings report
+888 Brannan Street
+Airbnb tax ID number: 26-3051428
+Host name: Padmavathy Tungaturthi
+Report generated: 20 August 2026
+Summary Gross earnings Adjustments Service fees Tax withheld Total (INR)
+Earnings 13,86,262.49 -29,890.55 -39,912.39 -66,520.65 12,49,938.90
+Homes
+Willow - The Villa 13,86,262.49
+Reporting period
+Month Gross earnings Total (INR)
+January 2022 0.00 0.00
+May 2023 30,850.00 28,382.00
+1-20 Aug 2026 38,840.00 35,732.80
+Payout methods
+T PADMAVATHY, 3202 (INR) 12,49,938.90`;
+
 module.exports = async function run() {
   const app = startApp({ bookings: [], lang: "en" });
   const { $ } = app;
@@ -85,6 +105,33 @@ module.exports = async function run() {
     assert(/Early check-in/.test($("#requests").value), `requests ${$("#requests").value}`);
     app.click("#closeFormModal");
     return `${$("#checkIn").value}→${$("#checkOut").value}`;
+  });
+
+  await test("an earnings report is refused, not turned into one huge booking", async () => {
+    const before = app.stored().length;
+    await importPdf("01_01_2022-08_20_2026_airbnb_earnings.pdf", [EARNINGS_REPORT]);
+    assert($("#formModal").hidden, "form opened for a statement");
+    assert(app.stored().length === before, "stored something");
+    const toast = app.$$(".toast").at(-1).textContent;
+    assert(/earnings report, not a booking/.test(toast), toast);
+    app.click("#closeImportModal");
+    return toast;
+  });
+
+  await test("bare dates with no check-in label are not treated as a stay", async () => {
+    const before = app.stored().length;
+    await importPdf("invoice.pdf", ["Willow The Villa\nIssued 4 September 2026\nDue 18 September 2026\nRs 5,000"]);
+    assert($("#formModal").hidden, "form opened without a labelled check-in");
+    assert(app.stored().length === before, "stored something");
+    app.click("#closeImportModal");
+  });
+
+  await test("an impossibly long stay is refused", async () => {
+    const before = app.stored().length;
+    await importPdf("lease.pdf", ["Check-in: 2026-01-05\nCheck-out: 2027-01-05\nGuest name Long Stay"]);
+    assert($("#formModal").hidden, "form opened for a year long stay");
+    assert(app.stored().length === before, "stored something");
+    app.click("#closeImportModal");
   });
 
   await test("a PDF with no dates is reported, not guessed", async () => {

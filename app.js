@@ -13,6 +13,7 @@
   const PDF_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs";
   // SheetJS ships current builds from its own CDN; the npm copy stopped at 0.18.5.
   const EXCEL_LIBRARY_URL = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
+  const MAX_PDF_STAY_NIGHTS = 180;
   const FOCUSABLE =
     'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   let eventsBound = false;
@@ -148,6 +149,7 @@
       phone: "ఫోన్ నంబర్ (అవసరం లేదు)",
       excelUnreadable: "Excel ఫైల్ చదవలేకపోయాం. ఇంటర్నెట్ ఉందో చూడండి.",
       pdfNoBooking: "PDF లో బుకింగ్ వివరాలు దొరకలేదు",
+      pdfStatement: "ఇది ఎర్నింగ్స్ రిపోర్ట్, బుకింగ్ కన్ఫర్మేషన్ కాదు. బుకింగ్ హిస్టరీ కోసం Airbnb ట్రాన్సాక్షన్ CSV వాడండి.",
       pdfReview: "PDF నుండి వివరాలు నింపాం — చెక్ చేసి సేవ్ చేయండి",
       pdfUnreadable: "PDF చదవలేకపోయాం. ఇంటర్నెట్ ఉందో చూడండి.",
       phonePending: "ఫోన్ నంబర్ అప్డేట్ చేయాలి",
@@ -238,6 +240,7 @@
       phone: "Phone number (optional)",
       excelUnreadable: "Could not read that Excel file. Check the internet connection.",
       pdfNoBooking: "No booking details found in that PDF",
+      pdfStatement: "That is an earnings report, not a booking confirmation. Use the Airbnb transaction CSV for booking history.",
       pdfReview: "Filled from the PDF — check the details and save",
       pdfUnreadable: "Could not read that PDF. Check the internet connection.",
       phonePending: "Phone number to be updated",
@@ -1833,7 +1836,7 @@
 
     const [booking] = parsePdfBookings(text, fallbackSource);
     if (!booking) {
-      toast(t("pdfNoBooking"));
+      toast(looksLikeStatement(text) ? t("pdfStatement") : t("pdfNoBooking"));
       return;
     }
 
@@ -1985,20 +1988,34 @@
     if (!flat) return [];
 
     const platform = detectPlatform(flat) || fallbackSource || "direct";
-    const dates = collectDates(flat);
-    let checkIn = findLabelledDate(flat, ["check[\\s.-]?in", "checkin", "arrival", "arriving", "from date"]);
-    let checkOut = findLabelledDate(flat, ["check[\\s.-]?out", "checkout", "departure", "departing", "to date"]);
 
-    if (!checkIn) checkIn = dates[0] || "";
+    // A stay has to be labelled as one. Any PDF holds dates — a statement's title
+    // range would otherwise become a booking running for years.
+    const checkIn = findLabelledDate(flat, [
+      "check[\\s.-]?in",
+      "checkin",
+      "arrival",
+      "arriving",
+      "from date",
+    ]);
     if (!checkIn) return [];
+
+    let checkOut = findLabelledDate(flat, [
+      "check[\\s.-]?out",
+      "checkout",
+      "departure",
+      "departing",
+      "to date",
+    ]);
     if (!checkOut || checkOut <= checkIn) {
-      checkOut = dates.find((date) => date > checkIn) || "";
+      checkOut = collectDates(flat).find((date) => date > checkIn) || "";
     }
     if (!checkOut) {
       const nightsMatch = flat.match(/(\d+)\s*nights?/i);
-      const stayNights = nightsMatch ? Math.max(1, Number(nightsMatch[1])) : 1;
-      checkOut = toISO(addDays(parseISO(checkIn), stayNights));
+      checkOut = toISO(addDays(parseISO(checkIn), nightsMatch ? Math.max(1, Number(nightsMatch[1])) : 1));
     }
+    // Nobody books a villa for half a year; that length means the dates are wrong.
+    if ((parseISO(checkOut) - parseISO(checkIn)) / DAY_MS > MAX_PDF_STAY_NIGHTS) return [];
 
     const adults = firstNumber(flat, /(\d+)\s*adults?/i) || firstNumber(flat, /(\d+)\s*guests?/i) || 1;
     const guestName =
@@ -2048,6 +2065,15 @@
         notes: "",
       }),
     ];
+  }
+
+  // Earnings statements and payout reports are full of dates and money but hold no
+  // stay at all, so they get told apart and refused with a message that points
+  // somewhere useful.
+  function looksLikeStatement(text) {
+    return /earnings report|gross earnings|payout method|tax withheld|service fees|reporting period|transaction history/i.test(
+      text,
+    );
   }
 
   function detectPlatform(text) {
