@@ -7,20 +7,20 @@ Use GitHub Pages. It hosts static HTML, CSS, JavaScript, and images for free fro
 Expected public URL:
 
 ```text
-https://aditya915.github.io/WillowTheVilla/
+https://aditunga.github.io/WillowTheVilla/
 ```
 
 ## Publish From This Mac
 
 The local repository is already initialized and committed.
 
-Before pushing, make sure GitHub CLI is logged in as `aditya915`:
+Before pushing, make sure GitHub CLI is logged in as `aditunga`:
 
 ```sh
 gh auth status
 ```
 
-If it shows a different account, log in as `aditya915`:
+If it shows a different account, log in as `aditunga`:
 
 ```sh
 gh auth login
@@ -29,16 +29,17 @@ gh auth login
 Then create the GitHub repository and push:
 
 ```sh
-gh repo create aditya915/WillowTheVilla --public --source=. --remote=origin --push
+gh repo create aditunga/WillowTheVilla --public --source=. --remote=origin --push
 ```
 
 In GitHub:
 
-1. Open `https://github.com/aditya915/WillowTheVilla`.
+1. Open `https://github.com/aditunga/WillowTheVilla`.
 2. Go to `Settings`.
 3. Open `Pages`.
-4. Under `Build and deployment`, choose `GitHub Actions`.
-5. The workflow in `.github/workflows/pages.yml` will deploy the website.
+4. Under `Build and deployment`, choose `Deploy from a branch`.
+5. Select branch `main` and folder `/ (root)`.
+6. Save.
 
 ## DuckDNS
 

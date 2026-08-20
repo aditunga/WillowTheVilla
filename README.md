@@ -15,7 +15,7 @@ Static, mobile-first booking calendar for Willow The Villa caretakers.
 
 ## Free Hosting
 
-The cheapest static hosting path is GitHub Pages from the `aditya915` GitHub account. Push these files to a public repository and enable Pages using GitHub Actions.
+The cheapest static hosting path is GitHub Pages from the `aditunga` GitHub account. Push these files to a public repository and enable Pages from the `main` branch root.
 
 DuckDNS is useful if the site is served from a home machine or local server, because it points a `duckdns.org` hostname to a changing public IP. GitHub Pages already hosts the site, so it does not need DuckDNS unless you specifically want a separate home-hosted URL.
 
