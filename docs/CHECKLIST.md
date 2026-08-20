@@ -51,4 +51,10 @@
 - [x] Remove the arriving/leaving/staying strip because the calendar already shows it.
 - [x] Import the Airbnb earnings export: skip payout rows, read US month-first dates, and work out check-out from the night count.
 - [ ] Backfill Airbnb bookings from before 2025, once the per-reservation export is downloaded.
+- [x] Refuse Airbnb earnings/statement PDFs instead of reading a stay out of the report title.
+- [x] Reload the page after owner login and logout, keeping the session across the reload.
+- [x] Show the guest name on every booking bar, including week continuations, and drop the initial circle that was crowding it out.
+- [x] Never let an empty Supabase table wipe bookings still held on a device.
+- [x] Cover the shared-storage path with tests against a stubbed Supabase.
+- [ ] Fill in supabase-config.js so all phones share one calendar.
 - [ ] Add authorized booking sync from email/API/channel manager when credentials/export access is available.

@@ -1,6 +1,8 @@
 (() => {
   const STORAGE_KEY = "willow-the-villa-bookings-v1";
   const LANGUAGE_KEY = "willow-the-villa-language";
+  const OWNER_SESSION_KEY = "willow-the-villa-owner-session";
+  const OWNER_PANEL_KEY = "willow-the-villa-open-owner-panel";
   const ADMIN_USERNAME = "Venu";
   const ADMIN_PASSWORD_HASH = 862899077;
   const DEFAULT_CHECK_IN_TIME = "14:00";
@@ -351,14 +353,16 @@
 
   async function init() {
     state.bookings = loadLocalBookings();
+    state.remoteConfig = getSupabaseConfig();
+    // Local-only mode has nothing to verify against, so the marker is enough.
+    if (!state.remoteConfig && hadOwnerSession()) state.isAdmin = true;
     populateStaticSelects();
     bindEvents();
     resetForm();
     render();
     registerServiceWorker();
+    if (state.isAdmin && takePendingOwnerPanel()) openAdminPanel();
 
-    state.remoteConfig = getSupabaseConfig();
-    renderSyncStatus();
     hydrateRemote().catch((error) => {
       state.remoteError = error.message || String(error);
       console.warn("Willow cloud startup failed", error);
@@ -578,7 +582,6 @@
         try {
           await signInRemoteAdmin(username, password);
           closeAdminLogin();
-          openAdminPanel();
         } catch (error) {
           els.adminLoginError.textContent = error.message || t("adminLoginError");
           els.adminLoginError.hidden = false;
@@ -587,9 +590,10 @@
         return;
       }
       if (username === ADMIN_USERNAME && credentialHash(password) === ADMIN_PASSWORD_HASH) {
+        rememberOwnerSession(true);
         setAdminMode(true);
         closeAdminLogin();
-        openAdminPanel();
+        reloadPage();
         return;
       }
       els.adminLoginError.hidden = false;
@@ -783,7 +787,9 @@
     if (!isAdmin) {
       closeFormModal();
       closeImportModal();
-      persistBookings(state.bookings);
+      // Signing out on a shared phone should leave no owner data behind, as long as
+      // the server still has it.
+      persistBookings(state.bookings, { dropOwnerFields: Boolean(state.remoteClient) });
     }
     render();
   }
@@ -810,7 +816,9 @@
     return window.supabase.createClient(config.url, config.anonKey, {
       auth: {
         autoRefreshToken: true,
-        persistSession: false,
+        // The owner is reloaded into the page after signing in, so the session has
+        // to outlive that reload. Logging out clears it and reloads again.
+        persistSession: true,
         detectSessionInUrl: true,
       },
     });
@@ -821,9 +829,11 @@
     await loadSupabaseLibrary();
     state.remoteClient = createRemoteClient(state.remoteConfig);
     if (!state.remoteClient) return;
+    await restoreOwnerSession();
     const remoteBookings = await loadBookings();
     state.bookings = remoteBookings;
     render();
+    if (state.isAdmin && takePendingOwnerPanel()) openAdminPanel();
   }
 
   function loadSupabaseLibrary() {
@@ -880,17 +890,79 @@
     }
 
     state.isAdmin = true;
+    rememberOwnerSession(true);
     state.bookings = await loadBookings();
     render();
+    reloadPage();
   }
 
   async function signOutAdmin() {
     if (state.remoteClient) {
       await state.remoteClient.auth.signOut();
     }
+    rememberOwnerSession(false);
     setAdminMode(false);
     state.bookings = await loadBookings();
     render();
+    reloadPage();
+  }
+
+  function reloadPage() {
+    try {
+      window.location.reload();
+    } catch (error) {
+      console.warn("Willow could not reload the page", error);
+    }
+  }
+
+  // Survives the reload but not closing the tab, so a shared phone does not stay
+  // signed in as owner.
+  function rememberOwnerSession(isOwner) {
+    try {
+      if (isOwner) {
+        window.sessionStorage.setItem(OWNER_SESSION_KEY, "1");
+        // So signing in still lands on the owner panel, reload and all.
+        window.sessionStorage.setItem(OWNER_PANEL_KEY, "1");
+      } else {
+        window.sessionStorage.removeItem(OWNER_SESSION_KEY);
+        window.sessionStorage.removeItem(OWNER_PANEL_KEY);
+      }
+    } catch {
+      /* private mode: the session simply does not survive the reload */
+    }
+  }
+
+  function takePendingOwnerPanel() {
+    try {
+      if (window.sessionStorage.getItem(OWNER_PANEL_KEY) !== "1") return false;
+      window.sessionStorage.removeItem(OWNER_PANEL_KEY);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function hadOwnerSession() {
+    try {
+      return window.sessionStorage.getItem(OWNER_SESSION_KEY) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  async function restoreOwnerSession() {
+    if (!hadOwnerSession()) return;
+    if (!state.remoteClient) {
+      // Local-only mode has no server to check against; the gate is cosmetic anyway.
+      state.isAdmin = true;
+      return;
+    }
+    const { data, error } = await state.remoteClient.auth.getUser();
+    if (error || !isRemoteOwner(data?.user)) {
+      rememberOwnerSession(false);
+      return;
+    }
+    state.isAdmin = true;
   }
 
   function isRemoteOwner(user) {
@@ -1181,9 +1253,12 @@
     const guest = firstName(booking.guestName) || source.label;
     const guestTotal = Number(booking.adults || 0) + Number(booking.children || 0);
     const guestSuffix = guestTotal > 1 ? ` +${guestTotal - 1}` : "";
-    const showLabel = segment === "start" || segment === "same-day";
+    // A stay crossing into a new week would otherwise be an anonymous bar, so the
+    // name is repeated on the Sunday that starts the row.
+    const startsRow = parseISO(isoDate).getDay() === 0;
+    const showLabel =
+      segment === "start" || segment === "same-day" || (segment === "middle" && startsRow);
     const label = `${guest}${guestSuffix}`;
-    const initial = guest.charAt(0).toUpperCase();
     const style = segment === "start"
       ? ` style="--booking-width: ${bookingStartWidth(booking, isoDate)}"`
       : "";
@@ -1194,7 +1269,6 @@
         title="${escapeAttr(`${booking.guestName} - ${source.label}`)}"
         ${style}
       >
-        ${showLabel ? `<span class="booking-avatar">${escapeHtml(initial)}</span>` : ""}
         ${showLabel ? `<span class="booking-name">${escapeHtml(label)}</span>` : ""}
       </span>
     `;
@@ -1566,8 +1640,11 @@
           REMOTE_TIMEOUT_MS,
           "Supabase bookings timed out",
         );
-        if (state.isAdmin && !remoteBookings.length && localBookings.length) {
-          await syncRemoteBookings(localBookings);
+        // An empty server plus a device that still holds bookings means the shared
+        // storage has not been filled yet. Never let that wipe the only copy: the
+        // owner uploads it on sign-in, and until then the device keeps what it has.
+        if (!remoteBookings.length && localBookings.length) {
+          if (state.isAdmin) await syncRemoteBookings(localBookings);
           persistBookings(localBookings);
           state.remoteError = "";
           state.lastSyncedAt = Date.now();
@@ -1608,11 +1685,9 @@
     return [];
   }
 
-  function persistBookings(bookings) {
-    // Once the owner signs out, the device copy keeps only what a caretaker may see —
-    // but only when Supabase still holds the full record. In local-only mode this
-    // browser is the sole copy, so nothing is thrown away.
-    const dropOwnerFields = !state.isAdmin && Boolean(state.remoteClient);
+  // Owner fields are only dropped when the caller knows Supabase already holds them.
+  // Stripping a copy that exists nowhere else would simply destroy it.
+  function persistBookings(bookings, { dropOwnerFields = false } = {}) {
     const safe = dropOwnerFields ? bookings.map(stripOwnerFields) : bookings;
     storage.set(STORAGE_KEY, JSON.stringify(safe));
   }

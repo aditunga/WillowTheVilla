@@ -109,6 +109,45 @@ module.exports = async function run() {
     assert($("#searchInput").placeholder.startsWith("Guest name"), $("#searchInput").placeholder);
   });
 
+  await test("every visible bar carries a readable name", () => {
+    app.click("#todayButton");
+    const pills = $$("#monthGrid .booking-pill");
+    assert(pills.length, "no bars drawn");
+    assert(!$$("#monthGrid .booking-avatar").length, "avatar still taking room from the name");
+
+    const starts = $$("#monthGrid .booking-pill.start, #monthGrid .booking-pill.same-day");
+    assert(starts.length, "no arrival bars");
+    starts.forEach((pill) => {
+      const name = pill.querySelector(".booking-name");
+      assert(name, `arrival bar with no name: ${pill.className}`);
+      assert(name.textContent.trim().length >= 2, `name too short: "${name.textContent}"`);
+    });
+    return `${starts.length} arrival bars, all named`;
+  });
+
+  await test("a stay running into the next week is named again on the Sunday", () => {
+    // A fortnight is guaranteed to cross a Sunday whatever day the test runs.
+    const long = startApp({
+      lang: "en",
+      bookings: [{
+        id: "long", guestName: "Sateesan Nair", phone: "9848012345", platform: "makemytrip",
+        checkIn: day(1), checkOut: day(15), checkInTime: "14:00", checkoutTime: "11:00",
+        adults: 2, children: 0, pets: 0, status: "confirmed", idProof: "pending",
+        villaRoom: "Willow Villa",
+      }],
+    });
+    const sundayMiddles = long.$$("#monthGrid .day-cell.dow-0 .booking-pill.middle");
+    assert(sundayMiddles.length >= 1, "no week continuation bar found");
+    sundayMiddles.forEach((pill) => {
+      const name = pill.querySelector(".booking-name");
+      assert(name, "week continuation bar has no name");
+      assert(name.textContent.includes("Sateesan"), `named "${name.textContent}"`);
+    });
+    const named = sundayMiddles[0].querySelector(".booking-name").textContent;
+    long.close();
+    return `${sundayMiddles.length} continuation bars, first reads "${named}"`;
+  });
+
   await test("no uncaught page errors", () => {
     assert(!app.errors.length, app.errors.map((e) => e.message).join(" | "));
   });

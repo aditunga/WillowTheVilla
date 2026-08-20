@@ -20,11 +20,97 @@ function isoDate(date) {
   return copy.toISOString().slice(0, 10);
 }
 
-function startApp({ bookings = [], lang = "en" } = {}) {
+// A stand-in for the Supabase client, so the shared-storage path can be exercised
+// without a real project. Mirrors only the calls app.js actually makes.
+function createSupabaseStub({ publicRows = [], privateRows = [], failReads = false } = {}) {
+  const server = {
+    publicRows: publicRows.map((row) => ({ ...row })),
+    privateRows: privateRows.map((row) => ({ ...row })),
+    signedIn: false,
+    ownerRole: "owner",
+    upserts: [],
+    deleted: [],
+    reads: 0,
+  };
+
+  function table(name) {
+    const builder = { table: name, mode: "select", filterIds: null, filterId: null };
+    const settle = async () => {
+      if (builder.mode === "select") {
+        server.reads += 1;
+        if (failReads) return { data: null, error: { message: "network down" } };
+        if (name === "bookings") return { data: server.publicRows.map((row) => ({ ...row })), error: null };
+        const rows = server.privateRows.filter(
+          (row) => !builder.filterIds || builder.filterIds.includes(row.booking_id),
+        );
+        return { data: rows.map((row) => ({ ...row })), error: null };
+      }
+      if (builder.mode === "upsert") {
+        if (!server.signedIn) return { error: { message: "row level security" } };
+        const key = name === "bookings" ? "id" : "booking_id";
+        const target = name === "bookings" ? server.publicRows : server.privateRows;
+        builder.rows.forEach((row) => {
+          server.upserts.push({ table: name, row });
+          const index = target.findIndex((existing) => existing[key] === row[key]);
+          if (index >= 0) target[index] = { ...row };
+          else target.push({ ...row });
+        });
+        return { error: null };
+      }
+      if (!server.signedIn) return { error: { message: "row level security" } };
+      server.deleted.push(builder.filterId);
+      server.publicRows = server.publicRows.filter((row) => row.id !== builder.filterId);
+      server.privateRows = server.privateRows.filter((row) => row.booking_id !== builder.filterId);
+      return { error: null };
+    };
+
+    Object.assign(builder, {
+      select() { return builder; },
+      order() { return builder; },
+      in(_column, values) { builder.filterIds = values; return builder; },
+      eq(_column, value) { builder.filterId = value; return builder; },
+      upsert(rows) { builder.mode = "upsert"; builder.rows = rows; return builder; },
+      delete() { builder.mode = "delete"; return builder; },
+      then(onFulfilled, onRejected) { return settle().then(onFulfilled, onRejected); },
+    });
+    return builder;
+  }
+
+  const client = {
+    auth: {
+      async signInWithPassword({ password }) {
+        if (password !== TEST_PASSWORD) return { error: { message: "Invalid login credentials" } };
+        server.signedIn = true;
+        return { error: null };
+      },
+      async getUser() {
+        return {
+          data: { user: { app_metadata: server.ownerRole ? { willow_role: server.ownerRole } : {} } },
+          error: null,
+        };
+      },
+      async signOut() {
+        server.signedIn = false;
+        return { error: null };
+      },
+    },
+    from: table,
+  };
+
+  return { server, library: { createClient: () => client } };
+}
+
+function startApp({ bookings = [], lang = "en", supabase = null, session = null } = {}) {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   const virtualConsole = new VirtualConsole();
   const errors = [];
-  virtualConsole.on("jsdomError", (error) => errors.push(error));
+  // jsdom cannot navigate and reports the attempt as an error, so treat that as the
+  // page reload it stands for rather than a failure.
+  const reloads = [];
+  virtualConsole.on("jsdomError", (error) => {
+    if (/Not implemented: navigation/.test(error.message)) reloads.push(error.message);
+    else errors.push(error);
+  });
   virtualConsole.on("warn", () => {});
 
   const dom = new JSDOM(html, {
@@ -37,6 +123,10 @@ function startApp({ bookings = [], lang = "en" } = {}) {
 
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings));
   window.localStorage.setItem(LANGUAGE_KEY, lang);
+  // Stands in for what survives a reload in the same tab.
+  if (session) {
+    Object.entries(session).forEach(([key, value]) => window.sessionStorage.setItem(key, value));
+  }
 
   const confirms = [];
   window.confirm = (message) => {
@@ -63,6 +153,18 @@ function startApp({ bookings = [], lang = "en" } = {}) {
       `const ADMIN_PASSWORD_HASH = ${credentialHash(TEST_PASSWORD)};`,
     );
   window.eval(fs.readFileSync(path.join(ROOT, "supabase-config.js"), "utf8"));
+  let stub = null;
+  if (supabase) {
+    stub = createSupabaseStub(supabase);
+    window.supabase = stub.library;
+    window.WILLOW_SUPABASE_CONFIG = {
+      url: "https://willow-test.supabase.co",
+      anonKey: "test-anon-key",
+      adminUsername: "Venu",
+      adminEmail: "owner@example.com",
+      ...(supabase.config || {}),
+    };
+  }
   window.eval(source);
 
   const query = (selector) => window.document.querySelector(selector);
@@ -73,6 +175,8 @@ function startApp({ bookings = [], lang = "en" } = {}) {
     errors,
     confirms,
     downloads,
+    reloads,
+    server: stub ? stub.server : null,
     $: query,
     $$: queryAll,
     click(target) {
@@ -159,11 +263,14 @@ function startApp({ bookings = [], lang = "en" } = {}) {
     settle() {
       return new Promise((resolve) => setTimeout(resolve, 0));
     },
+    // Signing in reloads the page in a real browser, and the fresh load reopens the
+    // owner panel. jsdom cannot navigate, so open it here to stand in for that.
     loginAsOwner() {
       api.click("#adminButton");
       query("#adminUsername").value = "Venu";
       query("#adminPassword").value = TEST_PASSWORD;
       api.submit("#adminLoginForm");
+      if (query("#adminPanelModal").hidden) api.click("#adminButton");
     },
     close() {
       dom.window.close();
@@ -203,4 +310,14 @@ const day = (offset) => {
   return isoDate(date);
 };
 
-module.exports = { startApp, createSuite, assert, day, isoDate, TEST_PASSWORD };
+module.exports = {
+  startApp,
+  createSuite,
+  assert,
+  day,
+  isoDate,
+  TEST_PASSWORD,
+  STORAGE_KEY,
+  OWNER_SESSION_KEY: "willow-the-villa-owner-session",
+  OWNER_PANEL_KEY: "willow-the-villa-open-owner-panel",
+};
