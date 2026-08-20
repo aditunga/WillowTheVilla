@@ -63,13 +63,21 @@
         </a>
 
         <div class="header-actions">
-          <button class="primary-button quick-add-button" id="quickAddButton" type="button">
+          <button class="primary-button quick-add-button" id="quickAddButton" type="button" hidden>
             <svg><use href="#icon-plus"></use></svg>
             <span data-i18n="quickAdd">జోడించు</span>
           </button>
-          <button class="ghost-button" id="exportButton" type="button">
+          <button class="ghost-button" id="openImportModal" type="button" hidden>
+            <svg><use href="#icon-upload"></use></svg>
+            <span data-i18n="importShort">ఇంపోర్ట్</span>
+          </button>
+          <button class="ghost-button" id="exportButton" type="button" hidden>
             <svg><use href="#icon-download"></use></svg>
             <span>CSV</span>
+          </button>
+          <button class="ghost-button admin-button" id="adminButton" type="button">
+            <svg><use href="#icon-lock"></use></svg>
+            <span id="adminButtonLabel" data-i18n="admin">అడ్మిన్</span>
           </button>
           <button class="language-toggle" id="languageToggle" type="button">English</button>
         </div>
@@ -103,132 +111,153 @@
           </div>
         </section>
 
-        <details class="entry-card" id="entryCard" open>
-          <summary>
-            <span data-i18n="addEditBooking">త్వరగా బుకింగ్ జోడించు</span>
-            <svg><use href="#icon-plus"></use></svg>
-          </summary>
+      </main>
+    </div>
 
-          <form id="bookingForm">
-            <input type="hidden" id="bookingInternalId" />
-            <div class="form-grid">
-              <label>
-                <span data-i18n="guestName">అతిథి పేరు</span>
-                <input id="guestName" name="guestName" autocomplete="name" required />
-              </label>
-              <label>
-                <span data-i18n="phone">ఫోన్ నంబర్</span>
-                <input
-                  id="phone"
-                  name="phone"
-                  inputmode="tel"
-                  autocomplete="tel"
-                  data-i18n-placeholder="phonePlaceholder"
-                  placeholder="నంబర్ లేకపోతే ఖాళీగా వదిలేయండి"
-                />
-              </label>
-              <label>
-                <span data-i18n="platform">ఎక్కడ బుక్ అయింది</span>
-                <select id="platform" name="platform" required></select>
-              </label>
-              <label>
-                <span data-i18n="checkIn">చెక్-ఇన్</span>
-                <input id="checkIn" name="checkIn" type="date" required />
-              </label>
-              <label>
-                <span data-i18n="checkOut">చెక్-అవుట్</span>
-                <input id="checkOut" name="checkOut" type="date" required />
-              </label>
-              <label>
-                <span data-i18n="adults">పెద్దలు</span>
-                <input id="adults" name="adults" type="number" min="1" value="2" required />
-              </label>
-              <label>
-                <span data-i18n="children">పిల్లలు</span>
-                <input id="children" name="children" type="number" min="0" value="0" />
-              </label>
-              <label>
-                <span data-i18n="pets">పెంపుడు జంతువులు</span>
-                <input id="pets" name="pets" type="number" min="0" value="0" />
-              </label>
-              <label class="full">
-                <span data-i18n="notes">కేర్‌టేకర్ నోట్లు</span>
-                <textarea id="notes" name="notes" rows="3"></textarea>
-                <small class="note-preview" id="notePreview" hidden></small>
-              </label>
-            </div>
+    <div class="form-modal" id="formModal" hidden>
+      <section class="entry-card form-modal-panel" id="entryCard" aria-labelledby="formModalTitle" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <h2 id="formModalTitle" data-i18n="addEditBooking">త్వరగా బుకింగ్ జోడించు</h2>
+          <button class="square-button" id="closeFormModal" type="button" data-i18n-aria-label="close">
+            <svg><use href="#icon-x"></use></svg>
+          </button>
+        </div>
 
-            <details class="advanced-fields">
-              <summary data-i18n="advancedDetails">మరిన్ని వివరాలు</summary>
-              <div class="form-grid">
-                <label>
-                  <span data-i18n="bookingId">బుకింగ్ ఐడి</span>
-                  <input id="bookingId" name="bookingId" />
-                </label>
-                <label>
-                  <span data-i18n="arrivalTime">రాక సమయం</span>
-                  <input id="arrivalTime" name="arrivalTime" type="time" />
-                </label>
-                <label>
-                  <span data-i18n="villaRoom">విల్లా/గది</span>
-                  <input id="villaRoom" name="villaRoom" value="Willow Villa" />
-                </label>
-                <label>
-                  <span data-i18n="status">స్థితి</span>
-                  <select id="bookingStatus" name="bookingStatus" required></select>
-                </label>
-                <label>
-                  <span data-i18n="idProof">ఐడీ ప్రూఫ్</span>
-                  <select id="idProof" name="idProof" required></select>
-                </label>
-                <label>
-                  <span data-i18n="email">ఈమెయిల్</span>
-                  <input id="email" name="email" type="email" autocomplete="email" />
-                </label>
-                <label>
-                  <span data-i18n="vehicle">వాహనం నంబర్</span>
-                  <input id="vehicle" name="vehicle" />
-                </label>
-                <label class="full">
-                  <span data-i18n="requests">అభ్యర్థనలు</span>
-                  <textarea id="requests" name="requests" rows="3"></textarea>
-                </label>
-              </div>
-            </details>
-
-            <div class="form-actions">
-              <button class="primary-button" type="submit">
-                <svg><use href="#icon-plus"></use></svg>
-                <span data-i18n="saveBooking">సేవ్</span>
-              </button>
-              <button class="ghost-button" id="resetButton" type="button" data-i18n="clearForm">క్లియర్</button>
-            </div>
-          </form>
-        </details>
-
-        <details class="import-card" id="importCard">
-          <summary>
-            <span data-i18n="importBookings">బుకింగ్‌లు ఇంపోర్ట్ చేయి</span>
-            <svg><use href="#icon-upload"></use></svg>
-          </summary>
-
-          <div class="import-grid">
+        <form id="bookingForm">
+          <input type="hidden" id="bookingInternalId" />
+          <div class="form-grid">
             <label>
-              <span data-i18n="importSource">ఇంపోర్ట్ మూలం</span>
-              <select id="importSource"></select>
+              <span data-i18n="guestName">అతిథి పేరు</span>
+              <input id="guestName" name="guestName" autocomplete="name" required />
             </label>
             <label>
-              <span data-i18n="importFile">CSV / ICS ఫైల్</span>
-              <input id="importFile" type="file" accept=".csv,.ics,text/csv,text/calendar" />
+              <span data-i18n="phone">ఫోన్ నంబర్</span>
+              <input
+                id="phone"
+                name="phone"
+                inputmode="tel"
+                autocomplete="tel"
+                data-i18n-placeholder="phonePlaceholder"
+                placeholder="నంబర్ లేకపోతే ఖాళీగా వదిలేయండి"
+              />
+            </label>
+            <label>
+              <span data-i18n="platform">ఎక్కడ బుక్ అయింది</span>
+              <select id="platform" name="platform" required></select>
+            </label>
+            <label>
+              <span data-i18n="checkIn">చెక్-ఇన్</span>
+              <input id="checkIn" name="checkIn" type="date" required />
+            </label>
+            <label>
+              <span data-i18n="checkInTime">చెక్-ఇన్ సమయం</span>
+              <input id="checkInTime" name="checkInTime" type="time" value="14:00" />
+            </label>
+            <label>
+              <span data-i18n="checkOut">చెక్-అవుట్</span>
+              <input id="checkOut" name="checkOut" type="date" required />
+            </label>
+            <label>
+              <span data-i18n="checkoutTime">చెక్-అవుట్ సమయం</span>
+              <input id="checkoutTime" name="checkoutTime" type="time" value="11:00" />
+            </label>
+            <label>
+              <span data-i18n="adults">పెద్దలు</span>
+              <input id="adults" name="adults" type="number" min="1" value="2" required />
+            </label>
+            <label>
+              <span data-i18n="children">పిల్లలు</span>
+              <input id="children" name="children" type="number" min="0" value="0" />
+            </label>
+            <label>
+              <span data-i18n="pets">పెంపుడు జంతువులు</span>
+              <input id="pets" name="pets" type="number" min="0" value="0" />
+            </label>
+            <label class="full">
+              <span data-i18n="notes">కేర్‌టేకర్ నోట్లు</span>
+              <textarea id="notes" name="notes" rows="3"></textarea>
+              <small class="note-preview" id="notePreview" hidden></small>
             </label>
           </div>
 
-          <button class="primary-button import-button" id="importButton" type="button">
-            <svg><use href="#icon-upload"></use></svg>
-            <span data-i18n="importBookings">బుకింగ్‌లు ఇంపోర్ట్ చేయి</span>
+          <details class="advanced-fields">
+            <summary data-i18n="advancedDetails">మరిన్ని వివరాలు</summary>
+            <div class="form-grid">
+              <label>
+                <span data-i18n="bookingId">బుకింగ్ ఐడి</span>
+                <input id="bookingId" name="bookingId" />
+              </label>
+              <label>
+                <span data-i18n="amountPaid">చెల్లించిన మొత్తం</span>
+                <input id="amountPaid" name="amountPaid" type="number" min="0" inputmode="decimal" />
+              </label>
+              <label>
+                <span data-i18n="arrivalTime">రాక సమయం</span>
+                <input id="arrivalTime" name="arrivalTime" type="time" />
+              </label>
+              <label>
+                <span data-i18n="villaRoom">విల్లా/గది</span>
+                <input id="villaRoom" name="villaRoom" value="Willow Villa" />
+              </label>
+              <label>
+                <span data-i18n="status">స్థితి</span>
+                <select id="bookingStatus" name="bookingStatus" required></select>
+              </label>
+              <label>
+                <span data-i18n="idProof">ఐడీ ప్రూఫ్</span>
+                <select id="idProof" name="idProof" required></select>
+              </label>
+              <label>
+                <span data-i18n="email">ఈమెయిల్</span>
+                <input id="email" name="email" type="email" autocomplete="email" />
+              </label>
+              <label>
+                <span data-i18n="vehicle">వాహనం నంబర్</span>
+                <input id="vehicle" name="vehicle" />
+              </label>
+              <label class="full">
+                <span data-i18n="requests">అభ్యర్థనలు</span>
+                <textarea id="requests" name="requests" rows="3"></textarea>
+              </label>
+            </div>
+          </details>
+
+          <div class="form-actions">
+            <button class="primary-button" type="submit">
+              <svg><use href="#icon-plus"></use></svg>
+              <span data-i18n="saveBooking">సేవ్</span>
+            </button>
+            <button class="ghost-button" id="resetButton" type="button" data-i18n="clearForm">క్లియర్</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="import-modal" id="importModal" hidden>
+      <section class="import-card import-modal-panel" id="importCard" aria-labelledby="importModalTitle" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <h2 id="importModalTitle" data-i18n="importBookings">బుకింగ్‌లు ఇంపోర్ట్ చేయి</h2>
+          <button class="square-button" id="closeImportModal" type="button" data-i18n-aria-label="close">
+            <svg><use href="#icon-x"></use></svg>
           </button>
-        </details>
-      </main>
+        </div>
+
+        <div class="import-grid">
+          <label>
+            <span data-i18n="importSource">ఇంపోర్ట్ మూలం</span>
+            <select id="importSource"></select>
+          </label>
+          <label>
+            <span data-i18n="importFile">CSV / ICS ఫైల్</span>
+            <input id="importFile" type="file" accept=".csv,.ics,text/csv,text/calendar" />
+          </label>
+        </div>
+
+        <button class="primary-button import-button" id="importButton" type="button">
+          <svg><use href="#icon-upload"></use></svg>
+          <span data-i18n="importBookings">బుకింగ్‌లు ఇంపోర్ట్ చేయి</span>
+        </button>
+      </section>
     </div>
 
     <div class="booking-modal" id="bookingModal" hidden>
@@ -249,35 +278,79 @@
       </section>
     </div>
 
-    <div class="passcode-overlay" id="passcodeOverlay" hidden>
-      <form class="passcode-modal" id="passcodeForm">
-        <div class="passcode-icon">
-          <svg><use href="#icon-lock"></use></svg>
-        </div>
-        <h2 data-i18n="passcodeTitle">బుకింగ్ కోడ్</h2>
-        <p data-i18n="passcodeHelp">కొత్త బుకింగ్ సేవ్ చేయడానికి 4 అంకెల కోడ్ ఇవ్వండి.</p>
-        <label>
-          <span data-i18n="passcodeLabel">4 అంకెల కోడ్</span>
-          <input
-            id="passcodeInput"
-            type="password"
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            maxlength="4"
-            pattern="[0-9]*"
-            required
-          />
-        </label>
-        <p class="passcode-error" id="passcodeError" data-i18n="passcodeWrong" hidden>
-          కోడ్ తప్పు
-        </p>
-        <div class="passcode-actions">
-          <button class="ghost-button" id="passcodeCancel" type="button" data-i18n="passcodeCancel">
-            రద్దు
+    <div class="admin-login-modal" id="adminLoginModal" hidden>
+      <form class="admin-login-panel" id="adminLoginForm" aria-labelledby="adminLoginTitle" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <h2 id="adminLoginTitle" data-i18n="adminLogin">అడ్మిన్ లాగిన్</h2>
+          <button class="square-button" id="closeAdminLogin" type="button" data-i18n-aria-label="close">
+            <svg><use href="#icon-x"></use></svg>
           </button>
-          <button class="primary-button" type="submit" data-i18n="passcodeConfirm">సేవ్</button>
+        </div>
+        <label>
+          <span data-i18n="adminUsername">యూజర్ పేరు</span>
+          <input id="adminUsername" name="adminUsername" autocomplete="username" required />
+        </label>
+        <label>
+          <span data-i18n="adminPassword">పాస్‌వర్డ్</span>
+          <input id="adminPassword" name="adminPassword" type="password" autocomplete="current-password" required />
+        </label>
+        <p class="admin-error" id="adminLoginError" data-i18n="adminLoginError" hidden>
+          యూజర్ పేరు లేదా పాస్‌వర్డ్ తప్పు
+        </p>
+        <div class="admin-login-actions">
+          <button class="primary-button" type="submit" data-i18n="adminLogin">అడ్మిన్ లాగిన్</button>
         </div>
       </form>
+    </div>
+
+    <div class="admin-panel-modal" id="adminPanelModal" hidden>
+      <section class="admin-panel" aria-labelledby="adminPanelTitle" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <h2 id="adminPanelTitle" data-i18n="ownerView">ఓనర్ వ్యూ</h2>
+          <button class="square-button" id="closeAdminPanel" type="button" data-i18n-aria-label="close">
+            <svg><use href="#icon-x"></use></svg>
+          </button>
+        </div>
+
+        <div class="finance-grid" aria-label="Owner financial summary">
+          <article class="finance-card">
+            <span data-i18n="totalRevenue">మొత్తం ఆదాయం</span>
+            <strong id="financeTotal">₹0</strong>
+          </article>
+          <article class="finance-card">
+            <span data-i18n="confirmedRevenue">కన్ఫర్మ్డ్ ఆదాయం</span>
+            <strong id="financeConfirmed">₹0</strong>
+          </article>
+          <article class="finance-card">
+            <span data-i18n="totalBookings">మొత్తం బుకింగ్‌లు</span>
+            <strong id="financeBookings">0</strong>
+          </article>
+          <article class="finance-card">
+            <span data-i18n="bookedNights">బుక్ అయిన రాత్రులు</span>
+            <strong id="financeNights">0</strong>
+          </article>
+          <article class="finance-card">
+            <span data-i18n="averageBooking">సగటు బుకింగ్</span>
+            <strong id="financeAverage">₹0</strong>
+          </article>
+        </div>
+
+        <div class="admin-panel-actions">
+          <button class="primary-button" id="adminAddBooking" type="button">
+            <svg><use href="#icon-plus"></use></svg>
+            <span data-i18n="quickAdd">జోడించు</span>
+          </button>
+          <button class="ghost-button" id="adminImportBookings" type="button">
+            <svg><use href="#icon-upload"></use></svg>
+            <span data-i18n="importShort">ఇంపోర్ట్</span>
+          </button>
+          <button class="ghost-button" id="adminExportCsv" type="button">
+            <svg><use href="#icon-download"></use></svg>
+            <span>CSV</span>
+          </button>
+          <button class="danger-button" id="adminLogout" type="button" data-i18n="logout">లాగౌట్</button>
+        </div>
+      </section>
     </div>
 
     <script src="app.js"></script>

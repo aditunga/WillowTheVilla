@@ -1,7 +1,7 @@
 :root {
   color-scheme: light;
   --bg: #f6f7f2;
-  --paper: #fffdf8;
+  --paper: #ffffff;
   --surface: #ffffff;
   --ink: #14211b;
   --muted: #65746d;
@@ -37,10 +37,11 @@ body {
   max-width: 100%;
   overflow-x: hidden;
   min-width: 0;
+  min-height: 100dvh;
   margin: 0;
   background:
-    linear-gradient(140deg, rgba(20, 93, 59, 0.1), transparent 36%),
-    linear-gradient(320deg, rgba(10, 79, 163, 0.1), transparent 34%),
+    linear-gradient(180deg, rgba(246, 247, 242, 0.78), rgba(246, 247, 242, 0.9)),
+    url("assets/listing/willow-2.jpeg") center top / cover no-repeat,
     var(--bg);
   color: var(--ink);
 }
@@ -94,9 +95,7 @@ main {
   padding: 10px;
   border: 1px solid rgba(20, 93, 59, 0.16);
   border-radius: var(--radius);
-  background:
-    linear-gradient(90deg, rgba(246, 247, 242, 0.96), rgba(246, 247, 242, 0.78) 58%, rgba(246, 247, 242, 0.48)),
-    url("assets/listing/willow-2.jpeg") center 48% / cover;
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(18px);
   box-shadow: var(--soft-shadow);
 }
@@ -154,10 +153,6 @@ main {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   width: 100%;
-}
-
-.quick-add-button {
-  grid-column: 1 / -1;
 }
 
 .ghost-button,
@@ -279,7 +274,7 @@ svg {
   margin-top: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: color-mix(in srgb, var(--paper) 94%, transparent);
+  background: #fff;
   box-shadow: var(--soft-shadow);
 }
 
@@ -397,6 +392,7 @@ svg {
 
 .day-cell {
   position: relative;
+  z-index: 0;
   display: grid;
   grid-template-rows: auto minmax(38px, 1fr);
   min-width: 0;
@@ -418,7 +414,13 @@ svg {
   border-color: var(--willow-2);
 }
 
+.day-cell.has-start,
+.day-cell.has-middle {
+  z-index: 2;
+}
+
 .day-cell.selected {
+  z-index: 4;
   border-color: var(--willow);
   box-shadow: inset 0 0 0 2px var(--willow);
 }
@@ -432,7 +434,7 @@ svg {
 .booking-stack {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: minmax(22px, 1fr);
+  grid-template-rows: minmax(30px, 1fr);
   gap: 0;
   align-items: center;
   align-self: stretch;
@@ -452,30 +454,47 @@ svg {
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 6px;
   min-width: 0;
   width: 100%;
-  min-height: 22px;
-  padding: 2px 5px;
+  min-height: 30px;
+  padding: 3px 7px;
   color: #fff;
-  font-size: clamp(0.56rem, 1.75vw, 0.72rem);
+  font-size: clamp(0.62rem, 1.85vw, 0.78rem);
   font-weight: 950;
   line-height: 1;
-  box-shadow: 0 3px 8px rgba(20, 33, 27, 0.16);
+  pointer-events: none;
+  box-shadow: 0 7px 14px rgba(20, 33, 27, 0.18);
 }
 
-.booking-pill small {
-  flex: 0 0 auto;
-  font-size: 0.58em;
+.booking-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 0.78rem;
   font-weight: 950;
-  opacity: 0.9;
+  line-height: 1;
 }
 
-.booking-pill span {
+.booking-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.booking-pill.start .booking-name,
+.booking-pill.same-day .booking-name {
+  flex: 0 0 auto;
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .booking-pill.start {
@@ -483,7 +502,8 @@ svg {
   grid-row: 1;
   align-self: center;
   justify-self: stretch;
-  margin-right: -6px;
+  width: var(--booking-width, calc(200% + 8px));
+  margin-right: -8px;
   border-radius: 999px 0 0 999px;
 }
 
@@ -492,7 +512,7 @@ svg {
   grid-row: 1;
   align-self: center;
   justify-self: stretch;
-  margin-left: -6px;
+  margin-left: -8px;
   border-radius: 0 999px 999px 0;
 }
 
@@ -501,7 +521,7 @@ svg {
   grid-row: 1;
   align-self: center;
   justify-self: stretch;
-  margin-inline: -6px;
+  margin-inline: -8px;
   border-radius: 0;
 }
 
@@ -511,6 +531,27 @@ svg {
   align-self: center;
   justify-self: stretch;
   border-radius: 999px;
+}
+
+.day-cell.dow-6 .booking-pill.start {
+  width: 100%;
+  margin-right: 0;
+  border-radius: 999px;
+}
+
+.day-cell.dow-0 .booking-pill.end {
+  margin-left: 0;
+  border-radius: 999px;
+}
+
+.day-cell.dow-0 .booking-pill.middle {
+  margin-left: 0;
+  border-radius: 999px 0 0 999px;
+}
+
+.day-cell.dow-6 .booking-pill.middle {
+  margin-right: 0;
+  border-radius: 0 999px 999px 0;
 }
 
 .booking-pill.airbnb {
@@ -550,7 +591,11 @@ svg {
   padding: 14px;
 }
 
-.booking-modal {
+.booking-modal,
+.form-modal,
+.import-modal,
+.admin-login-modal,
+.admin-panel-modal {
   position: fixed;
   inset: 0;
   z-index: 80;
@@ -561,17 +606,119 @@ svg {
   backdrop-filter: blur(8px);
 }
 
-.booking-modal[hidden] {
+.booking-modal[hidden],
+.form-modal[hidden],
+.import-modal[hidden],
+.admin-login-modal[hidden],
+.admin-panel-modal[hidden] {
   display: none;
 }
 
-.booking-modal-panel {
+.booking-modal-panel,
+.form-modal-panel,
+.import-modal-panel,
+.admin-login-panel,
+.admin-panel {
   width: min(100%, 760px);
   max-height: calc(100dvh - 24px);
   overflow: auto;
   margin: 0;
-  background: var(--paper);
+  background: #fff;
   box-shadow: var(--shadow);
+}
+
+.form-modal-panel {
+  width: min(100%, 820px);
+  padding: 14px;
+}
+
+.import-modal-panel {
+  width: min(100%, 520px);
+  padding: 14px;
+}
+
+.admin-login-panel {
+  width: min(100%, 390px);
+  padding: 16px;
+}
+
+.admin-login-panel label + label {
+  display: block;
+  margin-top: 12px;
+}
+
+.admin-login-actions {
+  margin-top: 15px;
+}
+
+.admin-login-actions .primary-button {
+  width: 100%;
+}
+
+.admin-error {
+  margin: 10px 0 0;
+  color: #a43d27;
+  font-weight: 900;
+}
+
+.admin-panel {
+  width: min(100%, 680px);
+  padding: 16px;
+}
+
+.finance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.finance-card {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.finance-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.finance-card strong {
+  display: block;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+  font-size: 1.24rem;
+  line-height: 1.1;
+}
+
+.admin-panel-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.admin-panel-actions button {
+  width: 100%;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: var(--willow);
+  font-size: 1.12rem;
+  line-height: 1.15;
 }
 
 .section-title {
@@ -668,7 +815,7 @@ svg {
   padding: 9px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #fbfcfa;
+  background: #fff;
 }
 
 .detail span {
@@ -761,7 +908,7 @@ svg {
   margin-top: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #fbfcfa;
+  background: #fff;
 }
 
 .advanced-fields summary {
@@ -780,9 +927,9 @@ svg {
   display: none;
 }
 
-.import-card .import-grid,
-.entry-card form {
-  padding: 0 14px 14px;
+.form-modal-panel form,
+.import-modal-panel .import-grid {
+  padding: 0;
 }
 
 .import-grid {
@@ -794,6 +941,11 @@ svg {
 .import-button {
   width: calc(100% - 28px);
   margin: 0 14px 14px;
+}
+
+.import-modal-panel .import-button {
+  width: 100%;
+  margin: 14px 0 0;
 }
 
 .form-grid {
@@ -891,73 +1043,6 @@ textarea:focus {
   opacity: 1;
 }
 
-.passcode-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: grid;
-  place-items: center;
-  padding: 18px;
-  background: rgba(20, 33, 27, 0.58);
-  backdrop-filter: blur(10px);
-}
-
-.passcode-overlay[hidden] {
-  display: none;
-}
-
-.passcode-modal {
-  width: min(100%, 390px);
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--paper);
-  box-shadow: var(--shadow);
-}
-
-.passcode-icon {
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  margin-bottom: 12px;
-  border-radius: var(--radius);
-  background: var(--willow);
-  color: #fff;
-}
-
-.passcode-modal h2 {
-  margin: 0;
-  font-size: 1.35rem;
-}
-
-.passcode-modal p {
-  margin: 8px 0 16px;
-  color: var(--muted);
-  font-weight: 850;
-  line-height: 1.35;
-}
-
-.passcode-modal input {
-  min-height: 58px;
-  text-align: center;
-  font-size: 1.8rem;
-  font-weight: 950;
-  letter-spacing: 0.18em;
-}
-
-.passcode-modal .passcode-error {
-  margin: 8px 0 0;
-  color: #a43d27;
-}
-
-.passcode-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 9px;
-  margin-top: 16px;
-}
-
 @media (max-width: 430px) {
   .site-shell {
     padding-inline: 6px;
@@ -1017,15 +1102,23 @@ textarea:focus {
     padding: 4px;
   }
 
-  .booking-pill {
-    min-height: 17px;
-    justify-content: center;
-    padding: 2px 3px;
-    font-size: 0.58rem;
+  .booking-stack {
+    grid-template-rows: minmax(24px, 1fr);
   }
 
-  .booking-pill small {
-    display: none;
+  .booking-pill {
+    min-height: 24px;
+    gap: 4px;
+    padding: 2px 5px;
+    font-size: 0.62rem;
+  }
+
+  .booking-avatar {
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
+    border-width: 1px;
+    font-size: 0.62rem;
   }
 
   .calendar-actions {
@@ -1042,12 +1135,20 @@ textarea:focus {
     white-space: nowrap;
   }
 
-  .booking-modal {
+  .booking-modal,
+  .form-modal,
+  .import-modal,
+  .admin-login-modal,
+  .admin-panel-modal {
     align-items: end;
     padding: 8px;
   }
 
-  .booking-modal-panel {
+  .booking-modal-panel,
+  .form-modal-panel,
+  .import-modal-panel,
+  .admin-login-panel,
+  .admin-panel {
     max-height: calc(100dvh - 16px);
   }
 }
@@ -1136,6 +1237,14 @@ textarea:focus {
 
   .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .finance-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-panel-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .import-grid {

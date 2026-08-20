@@ -7,8 +7,12 @@
 - [x] Remove duplicate/awkward form fields from quick entry.
 - [x] Move less-used fields into `More details`.
 - [x] Use real Willow The Villa photos from the Airbnb listing.
-- [x] Keep paid amount/payment fields out of the website.
-- [x] Require 4-digit code before saving a new booking.
+- [x] Keep paid amount/payment fields out of the caretaker view.
+- [x] Add Admin login for owner credentials.
+- [x] Move Add, Import, CSV export, Edit, and Delete behind Admin login.
+- [x] Replace the 4-digit booking passcode with Admin login for booking changes.
+- [x] Add owner financial summary for revenue, confirmed revenue, bookings, nights, and average booking.
+- [x] Add admin-only paid amount field for bookings, import, and export.
 - [x] Add pets to booking entry, display, import, and export.
 - [x] Show Telugu translation preview for common English caretaker notes.
 - [x] Allow bookings without phone number and mark phone as needing update.
@@ -16,8 +20,17 @@
 - [x] Put the calendar first on mobile and prevent header buttons from clipping.
 - [x] Remove the extra four-image strip below the main villa photo.
 - [x] Use only the second villa photo as the header background.
+- [x] Use the selected villa photo as the page background with white UI cards.
 - [x] Split checkout/check-in bars left-half/right-half inside shared calendar dates.
+- [x] Restyle calendar bookings as Airbnb-like joined bars with a leading guest initial.
+- [x] Let booking names spread across joined calendar bars so the first name is readable.
+- [x] Remove check-in/check-out time text from calendar bars because timing is in the popup.
 - [x] Open selected-date booking details as a popup when a calendar tile is tapped.
+- [x] Keep the main page focused on the calendar and move booking/import forms into popups.
 - [x] Show translated caretaker notes once in booking details, without repeating the original.
+- [x] Hide Booking ID, ID proof, Email, and Vehicle number from caretaker booking popup.
+- [x] Keep Arrival time and show Checkout time in caretaker booking popup.
+- [x] Add editable check-in time and checkout time fields to the booking popup.
+- [x] Use saved check-in and checkout times in booking details, CSV import, and CSV export.
 - [ ] Add shared booking storage so all phones see the same data.
 - [ ] Add authorized booking sync from email/API/channel manager when credentials/export access is available.

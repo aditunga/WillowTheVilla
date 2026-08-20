@@ -7,8 +7,9 @@ Static, mobile-first booking calendar for Willow The Villa caretakers.
 - Shows one unified calendar for Airbnb, Booking.com, MakeMyTrip, and Direct bookings.
 - Uses Telugu first, with an English toggle.
 - Shows source colors on calendar dates.
-- Shows guest name, phone number, dates, booking source, booking ID, arrival time, guest count, ID status, requests, and caretaker notes after tapping a date.
-- Excludes paid amount fields from the UI, saved data, and CSV export.
+- Shows caretakers the guest name, phone number, dates, check-in/checkout times, booking source, arrival time, guest count, requests, and caretaker notes after tapping a date.
+- Adds an Admin / Owner view for adding bookings, importing, CSV export, edit/delete, full booking details, and financials.
+- Keeps paid amount and owner-only fields out of the caretaker view.
 - Imports CSV files with full guest details.
 - Imports ICS calendar files for platform date ranges.
 - Saves bookings in the browser with `localStorage`.

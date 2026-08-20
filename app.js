@@ -1,9 +1,12 @@
 (() => {
   const STORAGE_KEY = "willow-the-villa-bookings-v1";
   const LANGUAGE_KEY = "willow-the-villa-language";
-  const ADD_BOOKING_CODE = "9313";
+  const ADMIN_SESSION_KEY = "willow-the-villa-admin-session";
+  const ADMIN_USERNAME = "Venu";
+  const ADMIN_PASSWORD_HASH = 862899077;
+  const DEFAULT_CHECK_IN_TIME = "14:00";
+  const DEFAULT_CHECKOUT_TIME = "11:00";
   const DAY_MS = 24 * 60 * 60 * 1000;
-  let passcodeResolve = null;
 
   const SOURCES = [
     {
@@ -36,18 +39,28 @@
       addEditBooking: "త్వరగా బుకింగ్ జోడించు",
       advancedDetails: "మరిన్ని వివరాలు",
       adults: "పెద్దలు",
+      admin: "అడ్మిన్",
+      adminLogin: "అడ్మిన్ లాగిన్",
+      adminLoginError: "యూజర్ పేరు లేదా పాస్‌వర్డ్ తప్పు",
+      adminPassword: "పాస్‌వర్డ్",
+      adminRequired: "బుకింగ్ మార్చడానికి అడ్మిన్ లాగిన్ అవసరం",
+      adminUsername: "యూజర్ పేరు",
       airbnb: "Airbnb",
+      amountPaid: "చెల్లించిన మొత్తం",
       arrivalTime: "రాక సమయం",
       booking: "Booking.com",
       bookingId: "బుకింగ్ ఐడి",
+      bookedNights: "బుక్ అయిన రాత్రులు",
       calendar: "క్యాలెండర్",
       call: "కాల్",
       cancelled: "రద్దు అయింది",
       caretaker: "సంరక్షకుల క్యాలెండర్",
       checkIn: "చెక్-ఇన్",
       checkInAt: "2 PM నుండి",
+      checkInTime: "చెక్-ఇన్ సమయం",
       checkOut: "చెక్-అవుట్",
       checkOutAt: "11 AM వరకు",
+      checkoutTime: "చెక్-అవుట్ సమయం",
       children: "పిల్లలు",
       clearForm: "క్లియర్",
       clearSelection: "సెలెక్షన్ క్లియర్",
@@ -62,7 +75,7 @@
       emptyDate: "ఈ తేదీకి బుకింగ్‌లు లేవు",
       emptyLoaded: "ఇంకా బుకింగ్‌లు లోడ్ కాలేదు",
       emptyLoadedHelp:
-        "Airbnb, Booking.com, MakeMyTrip నుండి CSV / ICS ఫైల్ ఇంపోర్ట్ చేయండి లేదా కింద బుకింగ్ జోడించండి.",
+        "అడ్మిన్ లాగిన్ చేసి CSV / ICS ఫైల్ ఇంపోర్ట్ చేయండి లేదా కొత్త బుకింగ్ జోడించండి.",
       exportDone: "CSV డౌన్‌లోడ్ అయింది",
       guestName: "అతిథి పేరు",
       guests: "అతిథులు",
@@ -71,19 +84,19 @@
       importDone: "ఇంపోర్ట్ పూర్తయింది",
       importFile: "CSV / ICS ఫైల్",
       importInvalid: "సరైన CSV లేదా ICS ఫైల్ ఎంచుకోండి",
+      importShort: "ఇంపోర్ట్",
       importSource: "ఇంపోర్ట్ మూలం",
       invalidDates: "చెక్-అవుట్ తేదీ చెక్-ఇన్ తర్వాత ఉండాలి",
+      averageBooking: "సగటు బుకింగ్",
+      confirmedRevenue: "కన్ఫర్మ్డ్ ఆదాయం",
+      financials: "ఫైనాన్షియల్స్",
+      logout: "లాగౌట్",
       makemytrip: "MakeMyTrip",
       notes: "కేర్‌టేకర్ నోట్లు",
       nights: "రాత్రులు",
       noValue: "లేదు",
       noteTeluguPreview: "తెలుగు నోట్",
-      passcodeCancel: "రద్దు",
-      passcodeConfirm: "సేవ్",
-      passcodeHelp: "కొత్త బుకింగ్ సేవ్ చేయడానికి 4 అంకెల కోడ్ ఇవ్వండి.",
-      passcodeLabel: "4 అంకెల కోడ్",
-      passcodeTitle: "బుకింగ్ కోడ్",
-      passcodeWrong: "కోడ్ తప్పు",
+      ownerView: "ఓనర్ వ్యూ",
       pets: "పెంపుడు జంతువులు",
       phone: "ఫోన్ నంబర్ (అవసరం లేదు)",
       phonePending: "ఫోన్ నంబర్ అప్డేట్ చేయాలి",
@@ -98,6 +111,8 @@
       status: "స్థితి",
       title: "ఒకే క్యాలెండర్‌లో అన్ని బుకింగ్‌లు",
       today: "ఈరోజు",
+      totalBookings: "మొత్తం బుకింగ్‌లు",
+      totalRevenue: "మొత్తం ఆదాయం",
       vehicle: "వాహనం నంబర్",
       villaRoom: "విల్లా/గది",
       whatsapp: "వాట్సాప్",
@@ -106,18 +121,28 @@
       addEditBooking: "Quick add booking",
       advancedDetails: "More details",
       adults: "Adults",
+      admin: "Admin",
+      adminLogin: "Admin login",
+      adminLoginError: "Wrong username or password",
+      adminPassword: "Password",
+      adminRequired: "Admin login is required to change bookings",
+      adminUsername: "Username",
       airbnb: "Airbnb",
+      amountPaid: "Amount paid",
       arrivalTime: "Arrival time",
       booking: "Booking.com",
       bookingId: "Booking ID",
+      bookedNights: "Booked nights",
       calendar: "Calendar",
       call: "Call",
       cancelled: "Cancelled",
       caretaker: "Caretaker calendar",
       checkIn: "Check-in",
       checkInAt: "from 2 PM",
+      checkInTime: "Check-in time",
       checkOut: "Check-out",
       checkOutAt: "until 11 AM",
+      checkoutTime: "Checkout time",
       children: "Children",
       clearForm: "Clear",
       clearSelection: "Clear selection",
@@ -132,7 +157,7 @@
       emptyDate: "No bookings for this date",
       emptyLoaded: "No bookings loaded yet",
       emptyLoadedHelp:
-        "Import a CSV / ICS file from Airbnb, Booking.com, MakeMyTrip, or add a booking below.",
+        "Admin can import a CSV / ICS file or add a booking.",
       exportDone: "CSV downloaded",
       guestName: "Guest name",
       guests: "Guests",
@@ -141,19 +166,19 @@
       importDone: "Import complete",
       importFile: "CSV / ICS file",
       importInvalid: "Choose a valid CSV or ICS file",
+      importShort: "Import",
       importSource: "Import source",
       invalidDates: "Check-out must be after check-in",
+      averageBooking: "Average booking",
+      confirmedRevenue: "Confirmed revenue",
+      financials: "Financials",
+      logout: "Logout",
       makemytrip: "MakeMyTrip",
       notes: "Caretaker notes",
       nights: "nights",
       noValue: "None",
       noteTeluguPreview: "Telugu note",
-      passcodeCancel: "Cancel",
-      passcodeConfirm: "Save",
-      passcodeHelp: "Enter the 4-digit code to save a new booking.",
-      passcodeLabel: "4-digit code",
-      passcodeTitle: "Booking code",
-      passcodeWrong: "Wrong code",
+      ownerView: "Owner view",
       pets: "Pets",
       phone: "Phone number (optional)",
       phonePending: "Phone number to be updated",
@@ -168,6 +193,8 @@
       status: "Status",
       title: "All bookings in one calendar",
       today: "Today",
+      totalBookings: "Total bookings",
+      totalRevenue: "Total revenue",
       vehicle: "Vehicle number",
       villaRoom: "Villa/room",
       whatsapp: "WhatsApp",
@@ -177,37 +204,58 @@
   const state = {
     bookings: [],
     currentMonth: startOfMonth(today()),
+    isAdmin: sessionStorage.getItem(ADMIN_SESSION_KEY) === "true",
     lang: localStorage.getItem(LANGUAGE_KEY) || "te",
     selectedDate: toISO(today()),
   };
 
   const els = {
+    adminAddBooking: document.getElementById("adminAddBooking"),
+    adminButton: document.getElementById("adminButton"),
+    adminButtonLabel: document.getElementById("adminButtonLabel"),
+    adminExportCsv: document.getElementById("adminExportCsv"),
+    adminImportBookings: document.getElementById("adminImportBookings"),
+    adminLoginError: document.getElementById("adminLoginError"),
+    adminLoginForm: document.getElementById("adminLoginForm"),
+    adminLoginModal: document.getElementById("adminLoginModal"),
+    adminLogout: document.getElementById("adminLogout"),
+    adminPanelModal: document.getElementById("adminPanelModal"),
+    adminPassword: document.getElementById("adminPassword"),
+    adminUsername: document.getElementById("adminUsername"),
+    amountPaid: document.getElementById("amountPaid"),
     bookingForm: document.getElementById("bookingForm"),
     bookingInternalId: document.getElementById("bookingInternalId"),
     bookingModal: document.getElementById("bookingModal"),
     bookingStatus: document.getElementById("bookingStatus"),
     calendarTitle: document.getElementById("calendarTitle"),
+    closeAdminLogin: document.getElementById("closeAdminLogin"),
+    closeAdminPanel: document.getElementById("closeAdminPanel"),
     closeBookingModal: document.getElementById("closeBookingModal"),
+    closeFormModal: document.getElementById("closeFormModal"),
+    closeImportModal: document.getElementById("closeImportModal"),
     clearSelectionButton: document.getElementById("clearSelectionButton"),
     entryCard: document.getElementById("entryCard"),
     exportButton: document.getElementById("exportButton"),
+    formModal: document.getElementById("formModal"),
     idProof: document.getElementById("idProof"),
     importButton: document.getElementById("importButton"),
     importFile: document.getElementById("importFile"),
+    importModal: document.getElementById("importModal"),
     importSource: document.getElementById("importSource"),
     languageToggle: document.getElementById("languageToggle"),
+    financeAverage: document.getElementById("financeAverage"),
+    financeBookings: document.getElementById("financeBookings"),
+    financeConfirmed: document.getElementById("financeConfirmed"),
+    financeNights: document.getElementById("financeNights"),
+    financeTotal: document.getElementById("financeTotal"),
     monthGrid: document.getElementById("monthGrid"),
     nextMonth: document.getElementById("nextMonth"),
     notePreview: document.getElementById("notePreview"),
     notes: document.getElementById("notes"),
-    passcodeCancel: document.getElementById("passcodeCancel"),
-    passcodeError: document.getElementById("passcodeError"),
-    passcodeForm: document.getElementById("passcodeForm"),
-    passcodeInput: document.getElementById("passcodeInput"),
-    passcodeOverlay: document.getElementById("passcodeOverlay"),
     phone: document.getElementById("phone"),
     platform: document.getElementById("platform"),
     prevMonth: document.getElementById("prevMonth"),
+    openImportModal: document.getElementById("openImportModal"),
     quickAddButton: document.getElementById("quickAddButton"),
     resetButton: document.getElementById("resetButton"),
     selectedBookings: document.getElementById("selectedBookings"),
@@ -278,9 +326,14 @@
       openBookingModal();
     });
 
-    els.selectedBookings.addEventListener("click", (event) => {
+    els.selectedBookings.addEventListener("click", async (event) => {
       const action = event.target.closest("[data-action]");
       if (!action) return;
+      if (!state.isAdmin) {
+        openAdminLogin();
+        toast(t("adminRequired"));
+        return;
+      }
 
       const booking = state.bookings.find((item) => item.id === action.dataset.id);
       if (!booking) return;
@@ -288,8 +341,7 @@
       if (action.dataset.action === "edit") {
         closeBookingModal();
         fillForm(booking);
-        els.entryCard.open = true;
-        els.entryCard.scrollIntoView({ block: "start" });
+        openFormModal();
       }
 
       if (action.dataset.action === "delete") {
@@ -302,16 +354,15 @@
 
     els.bookingForm.addEventListener("submit", async (event) => {
       event.preventDefault();
+      if (!state.isAdmin) {
+        openAdminLogin();
+        toast(t("adminRequired"));
+        return;
+      }
       const booking = readForm();
       if (parseISO(booking.checkOut) <= parseISO(booking.checkIn)) {
         toast(t("invalidDates"));
         return;
-      }
-
-      const isNewBooking = !booking.id;
-      if (isNewBooking) {
-        const allowed = await requestPasscode();
-        if (!allowed) return;
       }
 
       if (booking.id) {
@@ -328,68 +379,87 @@
       saveBookings();
       resetForm();
       render();
+      closeFormModal();
       toast(t("saved"));
     });
 
     els.resetButton.addEventListener("click", resetForm);
     els.exportButton.addEventListener("click", exportCsv);
     els.importButton.addEventListener("click", importSelectedFile);
+    els.openImportModal.addEventListener("click", openImportModal);
     els.notes.addEventListener("input", renderNotePreview);
-    els.passcodeCancel.addEventListener("click", () => closePasscode(false));
-    els.passcodeForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      if (els.passcodeInput.value === ADD_BOOKING_CODE) {
-        closePasscode(true);
+    els.adminButton.addEventListener("click", () => {
+      if (state.isAdmin) {
+        openAdminPanel();
         return;
       }
-      els.passcodeError.hidden = false;
-      els.passcodeInput.select();
+      openAdminLogin();
     });
-    els.passcodeInput.addEventListener("input", () => {
-      els.passcodeInput.value = els.passcodeInput.value.replace(/\D/g, "").slice(0, 4);
-      els.passcodeError.hidden = true;
+    els.adminLoginForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const username = clean(els.adminUsername.value);
+      const password = clean(els.adminPassword.value);
+      if (username === ADMIN_USERNAME && credentialHash(password) === ADMIN_PASSWORD_HASH) {
+        setAdminMode(true);
+        closeAdminLogin();
+        openAdminPanel();
+        return;
+      }
+      els.adminLoginError.hidden = false;
+      els.adminPassword.select();
     });
-    els.passcodeOverlay.addEventListener("click", (event) => {
-      if (event.target === els.passcodeOverlay) closePasscode(false);
+    els.adminUsername.addEventListener("input", () => {
+      els.adminLoginError.hidden = true;
+    });
+    els.adminPassword.addEventListener("input", () => {
+      els.adminLoginError.hidden = true;
+    });
+    els.adminAddBooking.addEventListener("click", () => {
+      closeAdminPanel();
+      resetForm();
+      openFormModal();
+    });
+    els.adminImportBookings.addEventListener("click", () => {
+      closeAdminPanel();
+      openImportModal();
+    });
+    els.adminExportCsv.addEventListener("click", exportCsv);
+    els.adminLogout.addEventListener("click", () => {
+      setAdminMode(false);
+      closeAdminPanel();
+    });
+    els.adminLoginModal.addEventListener("click", (event) => {
+      if (event.target === els.adminLoginModal) closeAdminLogin();
+    });
+    els.adminPanelModal.addEventListener("click", (event) => {
+      if (event.target === els.adminPanelModal) closeAdminPanel();
     });
     els.bookingModal.addEventListener("click", (event) => {
       if (event.target === els.bookingModal) closeBookingModal();
     });
+    els.formModal.addEventListener("click", (event) => {
+      if (event.target === els.formModal) closeFormModal();
+    });
+    els.importModal.addEventListener("click", (event) => {
+      if (event.target === els.importModal) closeImportModal();
+    });
+    els.closeAdminLogin.addEventListener("click", closeAdminLogin);
+    els.closeAdminPanel.addEventListener("click", closeAdminPanel);
     els.closeBookingModal.addEventListener("click", closeBookingModal);
+    els.closeFormModal.addEventListener("click", closeFormModal);
+    els.closeImportModal.addEventListener("click", closeImportModal);
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
-      if (!els.passcodeOverlay.hidden) {
-        closePasscode(false);
-        return;
-      }
+      if (!els.adminLoginModal.hidden) closeAdminLogin();
+      if (!els.adminPanelModal.hidden) closeAdminPanel();
       if (!els.bookingModal.hidden) closeBookingModal();
+      if (!els.formModal.hidden) closeFormModal();
+      if (!els.importModal.hidden) closeImportModal();
     });
     els.quickAddButton.addEventListener("click", () => {
       resetForm();
-      els.entryCard.open = true;
-      els.entryCard.scrollIntoView({ block: "start" });
-      document.getElementById("guestName").focus({ preventScroll: true });
+      openFormModal();
     });
-  }
-
-  function requestPasscode() {
-    return new Promise((resolve) => {
-      passcodeResolve = resolve;
-      els.passcodeInput.value = "";
-      els.passcodeError.hidden = true;
-      els.passcodeOverlay.hidden = false;
-      syncModalLock();
-      requestAnimationFrame(() => els.passcodeInput.focus());
-    });
-  }
-
-  function closePasscode(allowed) {
-    if (!passcodeResolve) return;
-    const resolve = passcodeResolve;
-    passcodeResolve = null;
-    els.passcodeOverlay.hidden = true;
-    syncModalLock();
-    resolve(allowed);
   }
 
   function openBookingModal() {
@@ -404,13 +474,90 @@
     syncModalLock();
   }
 
+  function openFormModal() {
+    if (!state.isAdmin) {
+      openAdminLogin();
+      toast(t("adminRequired"));
+      return;
+    }
+    els.formModal.hidden = false;
+    syncModalLock();
+    requestAnimationFrame(() => document.getElementById("guestName").focus({ preventScroll: true }));
+  }
+
+  function closeFormModal() {
+    els.formModal.hidden = true;
+    syncModalLock();
+  }
+
+  function openImportModal() {
+    if (!state.isAdmin) {
+      openAdminLogin();
+      toast(t("adminRequired"));
+      return;
+    }
+    els.importModal.hidden = false;
+    syncModalLock();
+    requestAnimationFrame(() => els.importSource.focus({ preventScroll: true }));
+  }
+
+  function closeImportModal() {
+    els.importModal.hidden = true;
+    syncModalLock();
+  }
+
+  function openAdminLogin() {
+    els.adminUsername.value = ADMIN_USERNAME;
+    els.adminPassword.value = "";
+    els.adminLoginError.hidden = true;
+    els.adminLoginModal.hidden = false;
+    syncModalLock();
+    requestAnimationFrame(() => els.adminPassword.focus({ preventScroll: true }));
+  }
+
+  function closeAdminLogin() {
+    els.adminLoginModal.hidden = true;
+    syncModalLock();
+  }
+
+  function openAdminPanel() {
+    renderAdminPanel();
+    els.adminPanelModal.hidden = false;
+    syncModalLock();
+    requestAnimationFrame(() => els.closeAdminPanel.focus({ preventScroll: true }));
+  }
+
+  function closeAdminPanel() {
+    els.adminPanelModal.hidden = true;
+    syncModalLock();
+  }
+
+  function setAdminMode(isAdmin) {
+    state.isAdmin = isAdmin;
+    if (isAdmin) {
+      sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
+    } else {
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      closeFormModal();
+      closeImportModal();
+    }
+    render();
+  }
+
   function syncModalLock() {
-    const hasOpenModal = !els.passcodeOverlay.hidden || !els.bookingModal.hidden;
+    const hasOpenModal =
+      !els.adminLoginModal.hidden ||
+      !els.adminPanelModal.hidden ||
+      !els.bookingModal.hidden ||
+      !els.formModal.hidden ||
+      !els.importModal.hidden;
     document.body.classList.toggle("modal-open", hasOpenModal);
   }
 
   function render() {
     translatePage();
+    renderAdminUi();
+    renderAdminPanel();
     renderLegend();
     renderWeekdays();
     renderCalendar();
@@ -430,6 +577,33 @@
     });
     els.languageToggle.textContent = state.lang === "te" ? "English" : "తెలుగు";
     renderNotePreview();
+  }
+
+  function renderAdminUi() {
+    document.body.classList.toggle("admin-mode", state.isAdmin);
+    els.quickAddButton.hidden = !state.isAdmin;
+    els.openImportModal.hidden = !state.isAdmin;
+    els.exportButton.hidden = !state.isAdmin;
+    els.adminButtonLabel.textContent = state.isAdmin ? t("ownerView") : t("admin");
+  }
+
+  function renderAdminPanel() {
+    if (!state.isAdmin) return;
+    const activeBookings = state.bookings.filter((booking) => booking.status !== "cancelled");
+    const confirmedBookings = activeBookings.filter((booking) => booking.status === "confirmed");
+    const totalRevenue = activeBookings.reduce((sum, booking) => sum + bookingAmount(booking), 0);
+    const confirmedRevenue = confirmedBookings.reduce(
+      (sum, booking) => sum + bookingAmount(booking),
+      0,
+    );
+    const bookedNights = activeBookings.reduce((sum, booking) => sum + nights(booking), 0);
+    const averageBooking = activeBookings.length ? totalRevenue / activeBookings.length : 0;
+
+    els.financeTotal.textContent = formatMoney(totalRevenue);
+    els.financeConfirmed.textContent = formatMoney(confirmedRevenue);
+    els.financeBookings.textContent = String(activeBookings.length);
+    els.financeNights.textContent = String(bookedNights);
+    els.financeAverage.textContent = formatMoney(averageBooking);
   }
 
   function renderNotePreview() {
@@ -474,6 +648,7 @@
       const date = addDays(gridStart, index);
       const iso = toISO(date);
       const bookings = bookingsForDate(iso);
+      const segments = bookings.map((booking) => bookingSegment(booking, iso));
       const bookingPills = bookings
         .sort((a, b) => segmentOrder(a, iso) - segmentOrder(b, iso))
         .slice(0, 3)
@@ -485,6 +660,10 @@
           : "";
       const classes = [
         "day-cell",
+        `dow-${date.getDay()}`,
+        segments.length ? "has-booking" : "",
+        segments.includes("start") || segments.includes("same-day") ? "has-start" : "",
+        segments.includes("middle") ? "has-middle" : "",
         date.getMonth() !== month ? "outside" : "",
         iso === todayIso ? "today" : "",
         iso === selected ? "selected" : "",
@@ -506,17 +685,38 @@
     const source = getSource(booking.platform);
     const segment = bookingSegment(booking, isoDate);
     const guest = firstName(booking.guestName) || source.label;
-    const time = segment === "start" ? "2PM" : segment === "end" ? "11AM" : "";
+    const guestTotal = Number(booking.adults || 0) + Number(booking.children || 0);
+    const guestSuffix = guestTotal > 1 ? ` +${guestTotal - 1}` : "";
+    const showLabel = segment === "start" || segment === "same-day";
+    const label = `${guest}${guestSuffix}`;
+    const initial = guest.charAt(0).toUpperCase();
+    const style = segment === "start"
+      ? ` style="--booking-width: ${bookingStartWidth(booking, isoDate)}"`
+      : "";
 
     return `
       <span
         class="booking-pill ${source.className} ${segment}"
         title="${escapeAttr(`${booking.guestName} - ${source.label}`)}"
+        ${style}
       >
-        ${time ? `<small>${time}</small>` : ""}
-        <span>${escapeHtml(guest)}</span>
+        ${showLabel ? `<span class="booking-avatar">${escapeHtml(initial)}</span>` : ""}
+        ${showLabel ? `<span class="booking-name">${escapeHtml(label)}</span>` : ""}
       </span>
     `;
+  }
+
+  function bookingStartWidth(booking, isoDate) {
+    const start = parseISO(isoDate);
+    const checkout = parseISO(booking.checkOut);
+    const nightsUntilCheckout = Math.max(1, Math.round((checkout - start) / DAY_MS));
+    const remainingDaysInWeek = 6 - start.getDay();
+    const reachesNextRow = nightsUntilCheckout > remainingDaysInWeek;
+    const halfColumns = reachesNextRow
+      ? remainingDaysInWeek * 2 + 1
+      : nightsUntilCheckout * 2;
+    const gapPixels = Math.max(0, Math.ceil(halfColumns / 2) * 8);
+    return `calc(${halfColumns * 100}% + ${gapPixels}px)`;
   }
 
   function bookingSegment(booking, isoDate) {
@@ -584,14 +784,34 @@
         `
       : `<span class="contact-missing">${escapeHtml(t("phonePending"))}</span>`;
     const guestCount = `${booking.adults || 0} ${t("adults")}, ${booking.children || 0} ${t("children")}, ${booking.pets || 0} ${t("pets")}`;
-    const dateText = `${formatShortDate(booking.checkIn)} ${t("checkInAt")} - ${formatShortDate(booking.checkOut)} ${t("checkOutAt")} (${nights(booking)} ${t("nights")})`;
+    const dateText = `${formatShortDate(booking.checkIn)} ${checkInTimeText(booking)} - ${formatShortDate(booking.checkOut)} ${checkoutTimeText(booking)} (${nights(booking)} ${t("nights")})`;
     const notes = noteForDisplay(booking.notes);
     const optionalDetails = [
-      detail(t("email"), booking.email),
-      detail(t("vehicle"), booking.vehicle),
       detail(t("requests"), booking.requests, true),
       detail(t("notes"), notes, true),
     ].join("");
+    const adminDetails = state.isAdmin
+      ? [
+          detail(t("status"), optionLabel(STATUS_OPTIONS, booking.status)),
+          detail(t("bookingId"), booking.bookingId),
+          detail(t("idProof"), optionLabel(ID_OPTIONS, booking.idProof)),
+          detail(t("email"), booking.email),
+          detail(t("vehicle"), booking.vehicle),
+          detail(t("amountPaid"), formatMoney(bookingAmount(booking))),
+        ].join("")
+      : "";
+    const adminActions = state.isAdmin
+      ? `
+          <button class="ghost-button" type="button" data-action="edit" data-id="${escapeAttr(booking.id)}">
+            <svg><use href="#icon-edit"></use></svg>
+            <span>${escapeHtml(t("edit"))}</span>
+          </button>
+          <button class="danger-button" type="button" data-action="delete" data-id="${escapeAttr(booking.id)}">
+            <svg><use href="#icon-trash"></use></svg>
+            <span>${escapeHtml(t("delete") || "Delete")}</span>
+          </button>
+        `
+      : "";
 
     return `
       <article class="guest-card">
@@ -605,25 +825,18 @@
 
         <div class="detail-grid">
           ${detail(t("dateRange"), dateText)}
+          ${detail(t("checkInTime"), displayTime(booking.checkInTime, DEFAULT_CHECK_IN_TIME))}
           ${detail(t("arrivalTime"), booking.arrivalTime || t("noValue"))}
+          ${detail(t("checkoutTime"), displayTime(booking.checkoutTime, DEFAULT_CHECKOUT_TIME))}
           ${detail(t("villaRoom"), booking.villaRoom)}
           ${detail(t("guests"), guestCount)}
-          ${detail(t("bookingId"), booking.bookingId)}
-          ${detail(t("status"), optionLabel(STATUS_OPTIONS, booking.status))}
-          ${detail(t("idProof"), optionLabel(ID_OPTIONS, booking.idProof))}
+          ${adminDetails}
           ${optionalDetails}
         </div>
 
         <div class="booking-actions">
           ${contactActions}
-          <button class="ghost-button" type="button" data-action="edit" data-id="${escapeAttr(booking.id)}">
-            <svg><use href="#icon-edit"></use></svg>
-            <span>${escapeHtml(t("edit"))}</span>
-          </button>
-          <button class="danger-button" type="button" data-action="delete" data-id="${escapeAttr(booking.id)}">
-            <svg><use href="#icon-trash"></use></svg>
-            <span>${escapeHtml(t("delete") || "Delete")}</span>
-          </button>
+          ${adminActions}
         </div>
       </article>
     `;
@@ -778,8 +991,11 @@
       phone: clean(form.get("phone")),
       platform: clean(form.get("platform")),
       bookingId: clean(form.get("bookingId")),
+      amountPaid: clean(form.get("amountPaid")),
       checkIn: clean(form.get("checkIn")),
+      checkInTime: clean(form.get("checkInTime")),
       checkOut: clean(form.get("checkOut")),
+      checkoutTime: clean(form.get("checkoutTime")),
       arrivalTime: clean(form.get("arrivalTime")),
       villaRoom: clean(form.get("villaRoom")),
       adults: Number(form.get("adults") || 1),
@@ -800,8 +1016,11 @@
     setValue("phone", booking.phone);
     setValue("platform", booking.platform);
     setValue("bookingId", booking.bookingId);
+    setValue("amountPaid", booking.amountPaid);
     setValue("checkIn", booking.checkIn);
+    setValue("checkInTime", booking.checkInTime || DEFAULT_CHECK_IN_TIME);
     setValue("checkOut", booking.checkOut);
+    setValue("checkoutTime", booking.checkoutTime || DEFAULT_CHECKOUT_TIME);
     setValue("arrivalTime", booking.arrivalTime);
     setValue("villaRoom", booking.villaRoom);
     setValue("adults", booking.adults);
@@ -821,7 +1040,9 @@
     els.bookingInternalId.value = "";
     const base = state.selectedDate || toISO(today());
     setValue("checkIn", base);
+    setValue("checkInTime", DEFAULT_CHECK_IN_TIME);
     setValue("checkOut", toISO(addDays(parseISO(base), 1)));
+    setValue("checkoutTime", DEFAULT_CHECKOUT_TIME);
     setValue("villaRoom", "Willow Villa");
     setValue("adults", 2);
     setValue("children", 0);
@@ -829,6 +1050,7 @@
     setValue("platform", "airbnb");
     setValue("bookingStatus", "confirmed");
     setValue("idProof", "pending");
+    setValue("amountPaid", "");
     renderNotePreview();
   }
 
@@ -842,7 +1064,7 @@
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return parsed.map(normalizeBooking);
       } catch {
         localStorage.removeItem(STORAGE_KEY);
       }
@@ -871,6 +1093,11 @@
   }
 
   async function importSelectedFile() {
+    if (!state.isAdmin) {
+      openAdminLogin();
+      toast(t("adminRequired"));
+      return;
+    }
     const file = els.importFile.files?.[0];
     if (!file) {
       toast(t("importInvalid"));
@@ -895,6 +1122,7 @@
     state.currentMonth = startOfMonth(parseISO(state.selectedDate));
     saveBookings();
     render();
+    closeImportModal();
     toast(`${t("importDone")} (${result.added + result.updated})`);
   }
 
@@ -922,8 +1150,11 @@
           phone: raw.phone,
           platform: source,
           bookingId: raw.bookingId,
+          amountPaid: raw.amountPaid,
           checkIn,
+          checkInTime: raw.checkInTime,
           checkOut,
+          checkoutTime: raw.checkoutTime,
           arrivalTime: raw.arrivalTime,
           villaRoom: raw.villaRoom || "Willow Villa",
           adults: Number(raw.adults || 1),
@@ -967,8 +1198,11 @@
           phone,
           platform: source,
           bookingId: uid,
+          amountPaid: "",
           checkIn,
+          checkInTime: DEFAULT_CHECK_IN_TIME,
           checkOut,
+          checkoutTime: DEFAULT_CHECKOUT_TIME,
           arrivalTime: "",
           villaRoom: "Willow Villa",
           adults: 1,
@@ -1041,6 +1275,9 @@
       pets: Number.isFinite(booking.pets) && booking.pets >= 0 ? booking.pets : 0,
       status: booking.status || "confirmed",
       idProof: booking.idProof || "pending",
+      amountPaid: clean(booking.amountPaid),
+      checkInTime: clean(booking.checkInTime) || DEFAULT_CHECK_IN_TIME,
+      checkoutTime: clean(booking.checkoutTime) || DEFAULT_CHECKOUT_TIME,
     };
   }
 
@@ -1094,9 +1331,12 @@
       phone: ["phone", "phonenumber", "mobile", "mobilenumber", "contact", "contactnumber"],
       platform: ["platform", "source", "bookedthrough", "bookingplatform"],
       bookingId: ["bookingid", "reservationid", "confirmationnumber", "confirmationcode"],
+      amountPaid: ["amountpaid", "amount", "paid", "total", "revenue", "price", "bookingamount"],
       checkIn: ["checkin", "checkindate", "arrival", "arrivaldate"],
+      checkInTime: ["checkintime", "checkinhour", "starttime"],
       checkOut: ["checkout", "checkoutdate", "departure", "departuredate"],
-      arrivalTime: ["arrivaltime", "checkintime"],
+      checkoutTime: ["checkouttime", "checkouthour", "endtime"],
+      arrivalTime: ["arrivaltime", "guestarrivaltime"],
       villaRoom: ["villaroom", "villa", "room", "unit", "listing"],
       adults: ["adults", "adult"],
       children: ["children", "child", "kids"],
@@ -1198,13 +1438,21 @@
   }
 
   function exportCsv() {
+    if (!state.isAdmin) {
+      openAdminLogin();
+      toast(t("adminRequired"));
+      return;
+    }
     const columns = [
       ["guestName", t("guestName")],
       ["phone", t("phone")],
       ["platform", t("platform")],
       ["bookingId", t("bookingId")],
+      ["amountPaid", t("amountPaid")],
       ["checkIn", t("checkIn")],
+      ["checkInTime", t("checkInTime")],
       ["checkOut", t("checkOut")],
+      ["checkoutTime", t("checkoutTime")],
       ["arrivalTime", t("arrivalTime")],
       ["villaRoom", t("villaRoom")],
       ["adults", t("adults")],
@@ -1304,8 +1552,43 @@
     }).format(parseISO(value));
   }
 
+  function displayTime(value, fallback) {
+    const text = clean(value) || fallback;
+    const match = text.match(/^(\d{1,2}):(\d{2})/);
+    if (!match) return text || t("noValue");
+    const date = new Date(2026, 0, 1, Number(match[1]), Number(match[2]));
+    return new Intl.DateTimeFormat(locale(), {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  }
+
+  function checkInTimeText(booking) {
+    const time = displayTime(booking.checkInTime, DEFAULT_CHECK_IN_TIME);
+    return state.lang === "te" ? `${time} నుండి` : `from ${time}`;
+  }
+
+  function checkoutTimeText(booking) {
+    const time = displayTime(booking.checkoutTime, DEFAULT_CHECKOUT_TIME);
+    return state.lang === "te" ? `${time} వరకు` : `until ${time}`;
+  }
+
   function nights(booking) {
     return Math.max(1, Math.round((parseISO(booking.checkOut) - parseISO(booking.checkIn)) / DAY_MS));
+  }
+
+  function bookingAmount(booking) {
+    const raw = clean(booking.amountPaid).replace(/[^\d.]/g, "");
+    const amount = Number(raw);
+    return Number.isFinite(amount) ? amount : 0;
+  }
+
+  function formatMoney(value) {
+    return new Intl.NumberFormat(locale(), {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(Number(value) || 0);
   }
 
   function whatsappUrl(phone) {
@@ -1320,6 +1603,14 @@
 
   function clean(value) {
     return String(value || "").trim();
+  }
+
+  function credentialHash(value) {
+    let hash = 5381;
+    for (const char of value) {
+      hash = ((hash << 5) + hash) ^ char.charCodeAt(0);
+    }
+    return hash >>> 0;
   }
 
   function escapeRegExp(value) {
