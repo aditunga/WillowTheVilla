@@ -92,6 +92,27 @@ module.exports = async function run() {
     app.click("#closeImportModal");
   });
 
+  await test("the same stay under a different source updates, not duplicates", async () => {
+    const before = app.stored().length;
+    app.click("#adminButton");
+    app.click("#adminImportBookings");
+    $("#importSource").value = "makemytrip";
+    // Same guest, same nights, imported again with the source dropdown changed.
+    app.attachFile(
+      "again.csv",
+      [
+        "Guest Name,Arrival,Departure",
+        '"Kumar, Anil",2026-09-04,2026-09-07',
+      ].join("\n"),
+    );
+    app.click("#importButton");
+    await app.settle();
+    assert(app.stored().length === before, `rows went from ${before} to ${app.stored().length}`);
+    const anil = app.stored().filter((booking) => booking.guestName.startsWith("Kumar"));
+    assert(anil.length === 1, `${anil.length} copies of the same stay`);
+    return "still one row";
+  });
+
   await test("owner sees the Telugu the caretaker will read", () => {
     app.click("#adminButton");
     app.click("#adminAddBooking");

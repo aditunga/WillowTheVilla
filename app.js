@@ -2429,10 +2429,12 @@
       if (index >= 0) return index;
     }
 
+    // Deliberately ignores the platform. The same stay imported twice with the
+    // source dropdown set differently is still the same stay, and one villa cannot
+    // host the same guest on the same nights through two channels.
     return state.bookings.findIndex(
       (item) =>
-        item.platform === booking.platform &&
-        item.guestName === booking.guestName &&
+        normalizeToken(item.guestName) === normalizeToken(booking.guestName) &&
         item.checkIn === booking.checkIn &&
         item.checkOut === booking.checkOut,
     );

@@ -60,6 +60,10 @@
 - [x] Ship the schema as a Supabase migration and keep key material out of the repository.
 - [x] Say "cloud storage is not set up yet" instead of "offline" when the project has no tables.
 - [x] Add `npm run check:supabase` and a migrations workflow.
-- [ ] Run the schema migration on the Supabase project.
-- [ ] Create the owner Auth user and fill in adminEmail.
+- [x] Run the schema migration on the Supabase project.
+- [x] Create the owner Auth user and fill in adminEmail.
+- [x] Share one calendar across every phone through Supabase.
+- [x] Keep popups above the mobile keyboard.
+- [x] Treat the same guest and dates as one booking whatever the import source said.
+- [ ] Roll the Supabase secret and service_role keys that were shared during setup.
 - [ ] Add authorized booking sync from email/API/channel manager when credentials/export access is available.
