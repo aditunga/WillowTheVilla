@@ -47,4 +47,6 @@
 - [x] Trap focus inside popups and close only the top-most popup on `Escape`.
 - [x] Add a web app manifest and offline cache so the calendar installs and opens without signal.
 - [x] Add a jsdom test suite covering the caretaker view, owner view, and imports.
+- [x] Import booking confirmation PDFs into the booking form for owner review.
+- [x] Import MakeMyTrip and other Excel exports, matching header names loosely and skipping report title rows.
 - [ ] Add authorized booking sync from email/API/channel manager when credentials/export access is available.

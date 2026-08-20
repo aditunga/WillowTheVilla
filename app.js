@@ -8,6 +8,11 @@
   const DAY_MS = 24 * 60 * 60 * 1000;
   const REMOTE_TIMEOUT_MS = 4500;
   const REFRESH_INTERVAL_MS = 2 * 60 * 1000;
+  // Legacy build, because caretaker phones are not always on a current Safari.
+  const PDF_LIBRARY_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.min.mjs";
+  const PDF_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs";
+  // SheetJS ships current builds from its own CDN; the npm copy stopped at 0.18.5.
+  const EXCEL_LIBRARY_URL = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
   const FOCUSABLE =
     'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   let eventsBound = false;
@@ -126,8 +131,8 @@
       idProof: "ఐడీ ప్రూఫ్",
       importBookings: "బుకింగ్‌లు ఇంపోర్ట్ చేయి",
       importDone: "ఇంపోర్ట్ పూర్తయింది",
-      importFile: "CSV / ICS ఫైల్",
-      importInvalid: "సరైన CSV లేదా ICS ఫైల్ ఎంచుకోండి",
+      importFile: "CSV / Excel / ICS / PDF ఫైల్",
+      importInvalid: "సరైన CSV, Excel, ICS లేదా PDF ఫైల్ ఎంచుకోండి",
       importShort: "ఇంపోర్ట్",
       importSource: "ఇంపోర్ట్ మూలం",
       invalidDates: "చెక్-అవుట్ తేదీ చెక్-ఇన్ తర్వాత ఉండాలి",
@@ -141,6 +146,10 @@
       ownerView: "ఓనర్ వ్యూ",
       pets: "పెంపుడు జంతువులు",
       phone: "ఫోన్ నంబర్ (అవసరం లేదు)",
+      excelUnreadable: "Excel ఫైల్ చదవలేకపోయాం. ఇంటర్నెట్ ఉందో చూడండి.",
+      pdfNoBooking: "PDF లో బుకింగ్ వివరాలు దొరకలేదు",
+      pdfReview: "PDF నుండి వివరాలు నింపాం — చెక్ చేసి సేవ్ చేయండి",
+      pdfUnreadable: "PDF చదవలేకపోయాం. ఇంటర్నెట్ ఉందో చూడండి.",
       phonePending: "ఫోన్ నంబర్ అప్డేట్ చేయాలి",
       phonePlaceholder: "నంబర్ లేకపోతే ఖాళీగా వదిలేయండి",
       platform: "ఎక్కడ బుక్ అయింది",
@@ -216,8 +225,8 @@
       idProof: "ID proof",
       importBookings: "Import bookings",
       importDone: "Import complete",
-      importFile: "CSV / ICS file",
-      importInvalid: "Choose a valid CSV or ICS file",
+      importFile: "CSV / Excel / ICS / PDF file",
+      importInvalid: "Choose a valid CSV, Excel, ICS or PDF file",
       importShort: "Import",
       importSource: "Import source",
       invalidDates: "Check-out must be after check-in",
@@ -231,6 +240,10 @@
       ownerView: "Owner view",
       pets: "Pets",
       phone: "Phone number (optional)",
+      excelUnreadable: "Could not read that Excel file. Check the internet connection.",
+      pdfNoBooking: "No booking details found in that PDF",
+      pdfReview: "Filled from the PDF — check the details and save",
+      pdfUnreadable: "Could not read that PDF. Check the internet connection.",
       phonePending: "Phone number to be updated",
       phonePlaceholder: "Leave blank if unavailable",
       platform: "Booked through",
@@ -1817,13 +1830,30 @@
       return;
     }
 
-    const text = await file.text();
     const fallbackSource = els.importSource.value || "direct";
     const lowerName = file.name.toLowerCase();
-    const imported =
-      lowerName.endsWith(".ics") || text.includes("BEGIN:VCALENDAR")
-        ? parseIcsBookings(text, fallbackSource)
-        : parseCsvBookings(text, fallbackSource);
+
+    if (lowerName.endsWith(".pdf") || file.type === "application/pdf") {
+      await importPdfFile(file, fallbackSource);
+      return;
+    }
+
+    let imported = [];
+    if (/\.(xlsx|xlsm|xls)$/.test(lowerName) || isExcelType(file.type)) {
+      try {
+        imported = parseRowBookings(await readExcelRows(file), fallbackSource);
+      } catch (error) {
+        console.warn("Willow Excel read failed", error);
+        toast(t("excelUnreadable"));
+        return;
+      }
+    } else {
+      const text = await file.text();
+      imported =
+        lowerName.endsWith(".ics") || text.includes("BEGIN:VCALENDAR")
+          ? parseIcsBookings(text, fallbackSource)
+          : parseCsvBookings(text, fallbackSource);
+    }
 
     if (!imported.length) {
       toast(t("importInvalid"));
@@ -1839,13 +1869,48 @@
     toast(`${t("importDone")} (${result.added + result.updated})`);
   }
 
+  // A confirmation PDF is one booking read out of free text, so it lands in the
+  // form for the owner to check rather than saving itself.
+  async function importPdfFile(file, fallbackSource) {
+    let text = "";
+    try {
+      text = await extractPdfText(file);
+    } catch (error) {
+      console.warn("Willow PDF read failed", error);
+      toast(t("pdfUnreadable"));
+      return;
+    }
+
+    const [booking] = parsePdfBookings(text, fallbackSource);
+    if (!booking) {
+      toast(t("pdfNoBooking"));
+      return;
+    }
+
+    state.selectedDate = booking.checkIn;
+    state.currentMonth = startOfMonth(parseISO(booking.checkIn));
+    closeImportModal();
+    resetForm();
+    fillForm({ ...booking, id: "" });
+    render();
+    openFormModal();
+    toast(t("pdfReview"));
+  }
+
   function parseCsvBookings(text, fallbackSource) {
-    const rows = parseCsvRows(text);
+    return parseRowBookings(parseCsvRows(text), fallbackSource);
+  }
+
+  // Shared by CSV and Excel: both arrive as rows of cells.
+  function parseRowBookings(rows, fallbackSource) {
     if (rows.length < 2) return [];
 
-    const headers = rows[0].map((header) => fieldForHeader(header));
+    const headerIndex = findHeaderRow(rows);
+    const headers = rows[headerIndex].map((header) => fieldForHeader(header));
+    if (!headers.some(Boolean)) return [];
+
     return rows
-      .slice(1)
+      .slice(headerIndex + 1)
       .map((row) => {
         const raw = {};
         headers.forEach((field, index) => {
@@ -1882,6 +1947,254 @@
         });
       })
       .filter(Boolean);
+  }
+
+  function isExcelType(type) {
+    return Boolean(type) && /sheet|excel|spreadsheet/i.test(type);
+  }
+
+  function loadExcelLibrary() {
+    if (window.XLSX?.read) return Promise.resolve(window.XLSX);
+    return new Promise((resolve, reject) => {
+      const fail = () => reject(new Error("Excel reader failed to load"));
+      const existing = document.querySelector("script[data-willow-excel]");
+      const script = existing || document.createElement("script");
+
+      script.addEventListener("load", () => resolve(window.XLSX), { once: true });
+      script.addEventListener("error", fail, { once: true });
+      if (existing) return;
+
+      script.src = EXCEL_LIBRARY_URL;
+      script.async = true;
+      script.dataset.willowExcel = "true";
+      document.head.append(script);
+    });
+  }
+
+  async function readExcelRows(file) {
+    const library = await loadExcelLibrary();
+    const data = new Uint8Array(await file.arrayBuffer());
+    // cellDates keeps real date cells as dates, so a sheet that displays 04/09/2026
+    // cannot be misread as 9 April.
+    const workbook = library.read(data, { type: "array", cellDates: true });
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) return [];
+
+    const rows = library.utils.sheet_to_json(workbook.Sheets[sheetName], {
+      header: 1,
+      raw: true,
+      defval: "",
+      blankrows: false,
+    });
+    return rows.map((row) => row.map(cellToText));
+  }
+
+  function cellToText(value) {
+    if (value instanceof Date) return toISO(value);
+    if (typeof value === "number") return String(value);
+    return clean(value);
+  }
+
+  function loadPdfLibrary() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    return import(PDF_LIBRARY_URL).then((library) => {
+      library.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL;
+      window.pdfjsLib = library;
+      return library;
+    });
+  }
+
+  async function extractPdfText(file) {
+    const library = await loadPdfLibrary();
+    const data = new Uint8Array(await file.arrayBuffer());
+    const document_ = await library.getDocument({ data }).promise;
+
+    let text = "";
+    for (let pageNumber = 1; pageNumber <= document_.numPages; pageNumber += 1) {
+      const page = await document_.getPage(pageNumber);
+      const content = await page.getTextContent();
+      text += content.items
+        .map((item) => (item.str || "") + (item.hasEOL ? "\n" : " "))
+        .join("");
+      text += "\n";
+    }
+    return text;
+  }
+
+  // Confirmation PDFs have no fixed shape, so this reads the labels the big
+  // platforms actually print and leaves the result for the owner to check.
+  function parsePdfBookings(text, fallbackSource) {
+    const flat = clean(text).replace(/\r/g, "").replace(/[^\S\n]+/g, " ");
+    if (!flat) return [];
+
+    const platform = detectPlatform(flat) || fallbackSource || "direct";
+    const dates = collectDates(flat);
+    let checkIn = findLabelledDate(flat, ["check[\\s.-]?in", "checkin", "arrival", "arriving", "from date"]);
+    let checkOut = findLabelledDate(flat, ["check[\\s.-]?out", "checkout", "departure", "departing", "to date"]);
+
+    if (!checkIn) checkIn = dates[0] || "";
+    if (!checkIn) return [];
+    if (!checkOut || checkOut <= checkIn) {
+      checkOut = dates.find((date) => date > checkIn) || "";
+    }
+    if (!checkOut) {
+      const nightsMatch = flat.match(/(\d+)\s*nights?/i);
+      const stayNights = nightsMatch ? Math.max(1, Number(nightsMatch[1])) : 1;
+      checkOut = toISO(addDays(parseISO(checkIn), stayNights));
+    }
+
+    const adults = firstNumber(flat, /(\d+)\s*adults?/i) || firstNumber(flat, /(\d+)\s*guests?/i) || 1;
+    const guestName =
+      findLabelledValue(flat, [
+        "guest name",
+        "primary guest",
+        "lead guest",
+        "booked by",
+        "traveller name",
+        "traveler name",
+        "customer name",
+        "name",
+        "guest",
+        // Horizontal space only — a name must not run past the end of its line.
+      ], "[A-Z][A-Za-z.'\\-]+(?:[^\\S\\n]+[A-Z][A-Za-z.'\\-]+){0,3}") || `${getSource(platform).label} booking`;
+
+    return [
+      normalizeBooking({
+        id: "",
+        guestName,
+        phone: findPdfPhone(flat),
+        platform,
+        bookingId: findLabelledValue(flat, [
+          "confirmation code",
+          "confirmation number",
+          "booking (?:id|number|reference|ref)",
+          "reservation (?:id|number|code)",
+          "itinerary (?:id|number)",
+          "pnr",
+          // Booking.com prints its number in space separated digit groups.
+        ], "[A-Za-z0-9][A-Za-z0-9-]{3,24}(?:[^\\S\\n]\\d{2,6}){0,3}"),
+        amountPaid: findPdfAmount(flat),
+        checkIn,
+        checkInTime: DEFAULT_CHECK_IN_TIME,
+        checkOut,
+        checkoutTime: DEFAULT_CHECKOUT_TIME,
+        arrivalTime: "",
+        villaRoom: "Willow Villa",
+        adults,
+        children: firstNumber(flat, /(\d+)\s*(?:child(?:ren)?|kids?)/i) || 0,
+        pets: firstNumber(flat, /(\d+)\s*pets?/i) || 0,
+        status: "confirmed",
+        idProof: "pending",
+        email: extractEmail(flat),
+        vehicle: "",
+        requests: findLabelledValue(flat, ["special requests?", "guest requests?"], "[^\\n]{3,120}"),
+        notes: "",
+      }),
+    ];
+  }
+
+  function detectPlatform(text) {
+    const lower = text.toLowerCase();
+    if (lower.includes("airbnb")) return "airbnb";
+    if (lower.includes("booking.com")) return "booking";
+    if (lower.includes("makemytrip") || lower.includes("make my trip")) return "makemytrip";
+    return "";
+  }
+
+  const MONTHS = {
+    jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4,
+    may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9,
+    september: 9, oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12,
+  };
+
+  const DATE_SHAPES = [
+    /\d{4}-\d{2}-\d{2}/,
+    /\b\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]{3,9}\.?,?\s+\d{4}\b/,
+    /\b[A-Za-z]{3,9}\.?\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}\b/,
+    /\b\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b/,
+  ];
+
+  function parseLooseDate(value) {
+    const text = clean(value);
+    if (!text) return "";
+
+    const isoMatch = text.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+
+    const dayFirst = text.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9})\.?,?\s+(\d{4})\b/);
+    if (dayFirst && MONTHS[dayFirst[2].toLowerCase()]) {
+      return buildIso(dayFirst[3], MONTHS[dayFirst[2].toLowerCase()], dayFirst[1]);
+    }
+
+    const monthFirst = text.match(/\b([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b/);
+    if (monthFirst && MONTHS[monthFirst[1].toLowerCase()]) {
+      return buildIso(monthFirst[3], MONTHS[monthFirst[1].toLowerCase()], monthFirst[2]);
+    }
+
+    // Indian confirmations print day first, so 04/09/2026 is 4 September.
+    const numeric = text.match(/\b(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})\b/);
+    if (numeric) {
+      let day = Number(numeric[1]);
+      let month = Number(numeric[2]);
+      const year = numeric[3].length === 2 ? `20${numeric[3]}` : numeric[3];
+      if (month > 12 && day <= 12) [day, month] = [month, day];
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) return buildIso(year, month, day);
+    }
+    return "";
+  }
+
+  function buildIso(year, month, day) {
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+
+  function collectDates(text) {
+    const scanner = new RegExp(DATE_SHAPES.map((shape) => shape.source).join("|"), "g");
+    const found = [];
+    let match = scanner.exec(text);
+    while (match) {
+      const iso = parseLooseDate(match[0]);
+      if (iso && !found.includes(iso)) found.push(iso);
+      match = scanner.exec(text);
+    }
+    return found.sort();
+  }
+
+  function findLabelledDate(text, labels) {
+    for (const label of labels) {
+      const match = text.match(new RegExp(`${label}[^A-Za-z0-9]{0,4}([\\s\\S]{0,60})`, "i"));
+      const found = match ? parseLooseDate(match[1]) : "";
+      if (found) return found;
+    }
+    return "";
+  }
+
+  function findLabelledValue(text, labels, valuePattern) {
+    for (const label of labels) {
+      const match = text.match(new RegExp(`${label}\\s*[:\\-–]?\\s*(${valuePattern})`, "i"));
+      if (match) return clean(match[1]);
+    }
+    return "";
+  }
+
+  function findPdfPhone(text) {
+    const labelled = text.match(
+      /(?:phone|mobile|contact|whats\s?app|tel)[^\d+]{0,12}(\+?\d[\d\s().-]{7,}\d)/i,
+    );
+    return labelled ? clean(labelled[1]) : extractPhone(text);
+  }
+
+  function findPdfAmount(text) {
+    const labelled = text.match(
+      /(?:total(?:\s+amount)?|amount\s+paid|grand\s+total|you\s+paid|total\s+payout)[^\d₹]{0,14}(?:₹|inr|rs\.?)?\s*([\d,]+(?:\.\d{1,2})?)/i,
+    );
+    if (labelled) return labelled[1].replace(/,/g, "");
+    const currency = text.match(/(?:₹|inr\s*|rs\.?\s*)([\d,]+(?:\.\d{1,2})?)/i);
+    return currency ? currency[1].replace(/,/g, "") : "";
+  }
+
+  function firstNumber(text, pattern) {
+    const match = text.match(pattern);
+    return match ? Number(match[1]) : 0;
   }
 
   function parseIcsBookings(text, fallbackSource) {
@@ -2041,26 +2354,94 @@
     return rows;
   }
 
+  // Platform exports often open with a title or a blank line before the real header.
+  function findHeaderRow(rows) {
+    const limit = Math.min(rows.length, 20);
+    let best = -1;
+    for (let index = 0; index < limit; index += 1) {
+      const fields = rows[index].map(fieldForHeader).filter(Boolean);
+      if (fields.includes("checkIn") && fields.length >= 2) return index;
+      if (best < 0 && fields.length >= 2) best = index;
+    }
+    return best < 0 ? 0 : best;
+  }
+
   function fieldForHeader(header) {
     const normalized = normalizeToken(header);
     const aliases = {
-      guestName: ["guestname", "guest", "name", "customername", "customer"],
-      phone: ["phone", "phonenumber", "mobile", "mobilenumber", "contact", "contactnumber"],
-      platform: ["platform", "source", "bookedthrough", "bookingplatform"],
-      bookingId: ["bookingid", "reservationid", "confirmationnumber", "confirmationcode"],
-      amountPaid: ["amountpaid", "amount", "paid", "total", "revenue", "price", "bookingamount"],
-      checkIn: ["checkin", "checkindate", "arrival", "arrivaldate"],
+      guestName: [
+        "guestname",
+        "guest",
+        "name",
+        "customername",
+        "customer",
+        "primaryguest",
+        "leadguest",
+        "travellername",
+        "travelername",
+        "bookedby",
+      ],
+      phone: [
+        "phone",
+        "phonenumber",
+        "mobile",
+        "mobileno",
+        "mobilenumber",
+        "contact",
+        "contactno",
+        "contactnumber",
+        "guestmobile",
+      ],
+      platform: ["platform", "source", "bookedthrough", "bookingplatform", "channel", "bookingsource", "ota"],
+      bookingId: [
+        "bookingid",
+        "hotelbookingid",
+        "reservationid",
+        "reservationnumber",
+        "bookingreference",
+        "confirmationnumber",
+        "confirmationcode",
+        "voucherno",
+        "voucherid",
+      ],
+      amountPaid: [
+        "amountpaid",
+        "amount",
+        "amountreceived",
+        "paid",
+        "total",
+        "totalamount",
+        "grandtotal",
+        "payableamount",
+        "sellingprice",
+        "revenue",
+        "price",
+        "bookingamount",
+      ],
+      checkIn: ["checkin", "checkindate", "arrival", "arrivaldate", "fromdate", "startdate"],
       checkInTime: ["checkintime", "checkinhour", "starttime"],
-      checkOut: ["checkout", "checkoutdate", "departure", "departuredate"],
+      checkOut: ["checkout", "checkoutdate", "departure", "departuredate", "todate", "enddate"],
       checkoutTime: ["checkouttime", "checkouthour", "endtime"],
       arrivalTime: ["arrivaltime", "guestarrivaltime"],
-      villaRoom: ["villaroom", "villa", "room", "unit", "listing"],
-      adults: ["adults", "adult"],
-      children: ["children", "child", "kids"],
+      villaRoom: [
+        "villaroom",
+        "villa",
+        "room",
+        "roomno",
+        "roomnumber",
+        "roomtype",
+        "unit",
+        "listing",
+        "property",
+        "propertyname",
+        "hotelname",
+      ],
+      adults: ["adults", "adult", "noofadults", "numberofadults", "guests", "noofguests", "totalguests", "pax"],
+      children: ["children", "child", "kids", "noofchildren", "numberofchildren", "noofkids"],
       pets: ["pets", "pet", "dog", "dogs", "cat", "cats"],
       status: ["status", "bookingstatus"],
       idProof: ["idproof", "idstatus", "identityproof"],
-      email: ["email", "emailaddress"],
+      email: ["email", "emailid", "emailaddress", "guestemail"],
       vehicle: ["vehicle", "vehiclenumber", "carnumber"],
       requests: ["requests", "specialrequests"],
       notes: ["notes", "caretakernotes", "description"],

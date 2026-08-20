@@ -95,11 +95,63 @@ function startApp({ bookings = [], lang = "en" } = {}) {
     submit(selector) {
       query(selector).dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
     },
-    attachFile(name, text) {
+    attachFile(name, text, type = "") {
       Object.defineProperty(query("#importFile"), "files", {
-        value: [{ name, text: async () => text }],
+        value: [
+          {
+            name,
+            type,
+            text: async () => text,
+            arrayBuffer: async () => new TextEncoder().encode(text).buffer,
+          },
+        ],
         configurable: true,
       });
+    },
+    // Stands in for SheetJS. Pass rows of raw cell values (strings, numbers, Dates),
+    // or null to make reading fail the way an offline phone would.
+    stubExcel(rows) {
+      if (rows === null) {
+        window.XLSX = {
+          read() {
+            throw new Error("xlsx unavailable");
+          },
+          utils: { sheet_to_json: () => [] },
+        };
+        return;
+      }
+      window.XLSX = {
+        read: () => ({ SheetNames: ["Sheet1"], Sheets: { Sheet1: rows } }),
+        utils: { sheet_to_json: (sheet) => sheet.map((row) => [...row]) },
+      };
+    },
+    // Stands in for the pdf.js module the app pulls from the CDN. Pass an array of
+    // page strings, or null to make loading fail the way an offline phone would.
+    stubPdf(pages) {
+      if (pages === null) {
+        window.pdfjsLib = {
+          GlobalWorkerOptions: {},
+          getDocument() {
+            return { promise: Promise.reject(new Error("pdf.js unavailable")) };
+          },
+        };
+        return;
+      }
+      window.pdfjsLib = {
+        GlobalWorkerOptions: {},
+        getDocument: () => ({
+          promise: Promise.resolve({
+            numPages: pages.length,
+            getPage: async (pageNumber) => ({
+              getTextContent: async () => ({
+                items: pages[pageNumber - 1]
+                  .split("\n")
+                  .map((line) => ({ str: line, hasEOL: true })),
+              }),
+            }),
+          }),
+        }),
+      };
     },
     stored() {
       return JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "[]");

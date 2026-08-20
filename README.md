@@ -15,7 +15,9 @@ Static, mobile-first booking calendar for Willow The Villa caretakers.
 - Warns the owner before saving a booking that overlaps another stay in the same villa/room.
 - Keeps paid amount and owner-only fields out of the caretaker view.
 - Imports CSV files with full guest details.
+- Imports Excel exports (`.xlsx`, `.xlsm`, `.xls`), including the MakeMyTrip report format.
 - Imports ICS calendar files for platform date ranges.
+- Reads a booking confirmation PDF and fills the booking form for the owner to check before saving.
 - Uses Supabase shared storage when configured, with browser `localStorage` fallback.
 - Re-checks the cloud when the phone comes back to the app or back online, and shows when the data was last updated.
 - Installs to a phone home screen and keeps working offline from the last loaded copy.
@@ -39,6 +41,14 @@ npm test
 
 `npm run serve` starts a local static server on <http://localhost:4173> if you want
 to click through the site by hand.
+
+One spec, `tests/excel-real.test.js`, checks a genuine `.xlsx` file end to end. SheetJS
+is not on the npm registry past 0.18.5, so that spec skips unless the reader is
+installed on purpose:
+
+```sh
+npm install --no-save https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz
+```
 
 ## Free Hosting
 

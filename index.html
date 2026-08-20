@@ -17,7 +17,7 @@
     <link rel="icon" href="assets/logo.png" />
     <link rel="apple-touch-icon" href="assets/logo.png" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260820-1700" />
+    <link rel="stylesheet" href="styles.css?v=20260820-1930" />
   </head>
   <body>
     <svg class="sprite" aria-hidden="true" focusable="false">
@@ -268,8 +268,12 @@
             <select id="importSource"></select>
           </label>
           <label>
-            <span data-i18n="importFile">CSV / ICS ఫైల్</span>
-            <input id="importFile" type="file" accept=".csv,.ics,text/csv,text/calendar" />
+            <span data-i18n="importFile">CSV / Excel / ICS / PDF ఫైల్</span>
+            <input
+              id="importFile"
+              type="file"
+              accept=".csv,.xlsx,.xlsm,.xls,.ics,.pdf,text/csv,text/calendar,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            />
           </label>
         </div>
 
@@ -373,7 +377,7 @@
       </section>
     </div>
 
-    <script src="supabase-config.js?v=20260820-1700"></script>
-    <script src="app.js?v=20260820-1700"></script>
+    <script src="supabase-config.js?v=20260820-1930"></script>
+    <script src="app.js?v=20260820-1930"></script>
   </body>
 </html>

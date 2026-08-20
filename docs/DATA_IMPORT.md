@@ -4,7 +4,8 @@ The website is static and free. Admin users can import files selected on the pho
 
 ## CSV Import
 
-Use `examples/bookings-template.csv` as the format.
+Use `examples/bookings-template.csv` as the format. Column names are matched loosely, so
+a platform export with its own header names usually imports without editing.
 
 Required columns:
 
@@ -41,11 +42,59 @@ Valid platform values:
 
 `amountPaid` is owner-only. It is imported/exported for Admin users but is not shown to caretakers.
 
+## Excel Import
+
+MakeMyTrip hands over bookings as Excel files, so `.xlsx`, `.xlsm`, and older `.xls`
+files import the same way a CSV does. The first sheet in the file is read.
+
+The columns do not have to be named exactly like the CSV template. Headers are matched
+loosely, so `Guest Name`, `Mobile No`, `Email ID`, `Hotel Booking ID`, `Check In Date`,
+`Check Out Date`, `No. of Adults`, `No. of Children`, and `Total Amount` are all
+understood, along with the CSV column names.
+
+Platform exports usually put a report title and a blank line above the real header row.
+The website looks down the first twenty rows for the header instead of assuming it is
+the first line, so those files import without editing.
+
+Date cells are read as dates, not as text, so a sheet showing `04/09/2026` imports as
+4 September whatever the computer's date settings are.
+
+A row is skipped when it has no check-in and check-out date, which is how blank trailing
+rows at the end of an export are ignored.
+
+Reading an Excel file needs an internet connection the first time, because the reader is
+downloaded from a CDN.
+
 ## ICS Calendar Import
 
 ICS files can add blocked/booked date ranges from platform calendar exports. They often do not include guest phone numbers. If the ICS file contains a phone number in the event description, the website will try to read it.
 
 Use the import source selector before importing an ICS file so the booking gets the right color.
+
+## PDF Confirmation Import
+
+Select a booking confirmation PDF the same way as a CSV or ICS file. The website reads
+the text out of the PDF and fills the booking form, then waits for the owner to check
+the details and press Save. Nothing is stored until Save is pressed, because a PDF has
+no fixed layout and the reading is a best guess.
+
+What it looks for:
+
+- check-in and check-out dates, in `2026-09-04`, `4 Sep 2026`, `Sep 4, 2026`, and
+  `04/09/2026` form. Slash dates are read day first, the Indian way.
+- guest name, after a label such as `Guest name`, `Booked by`, or `Primary guest`
+- confirmation code, booking number, or reservation ID
+- phone number and email address
+- guest counts from text such as `3 adults, 1 child`
+- total amount, from `Total`, `Amount paid`, `Grand total`, or a `₹`/`INR` figure
+- the platform, if the words Airbnb, Booking.com, or MakeMyTrip appear anywhere
+
+Anything it cannot find is left blank or falls back to the import source selector, so
+set that selector before importing a PDF that does not name its platform.
+
+Reading a PDF needs an internet connection the first time, because the PDF reader is
+downloaded from a CDN. Scanned or photographed PDFs hold no text, so they cannot be
+read.
 
 ## Full Automatic Sync
 

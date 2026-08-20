@@ -1,5 +1,12 @@
 // Runs every spec in-process so `npm test` stays a single command.
-const specs = ["./caretaker.test.js", "./owner.test.js", "./import.test.js"];
+const specs = [
+  "./caretaker.test.js",
+  "./owner.test.js",
+  "./import.test.js",
+  "./pdf.test.js",
+  "./excel.test.js",
+  "./excel-real.test.js",
+];
 
 (async () => {
   let failures = 0;
