@@ -58,11 +58,16 @@
       guestName: "అతిథి పేరు",
       guests: "అతిథులు",
       idProof: "ఐడీ ప్రూఫ్",
+      importBookings: "బుకింగ్‌లు ఇంపోర్ట్ చేయి",
+      importDone: "ఇంపోర్ట్ పూర్తయింది",
+      importFile: "CSV / ICS ఫైల్",
+      importInvalid: "సరైన CSV లేదా ICS ఫైల్ ఎంచుకోండి",
+      importSource: "ఇంపోర్ట్ మూలం",
       invalidDates: "చెక్-అవుట్ తేదీ చెక్-ఇన్ తర్వాత ఉండాలి",
       makemytrip: "MakeMyTrip",
       notes: "కేర్‌టేకర్ నోట్లు",
       nights: "రాత్రులు",
-      noValue: "లేదా",
+      noValue: "లేదు",
       phone: "ఫోన్ నంబర్",
       platform: "ఎక్కడ బుక్ అయింది",
       requests: "అభ్యర్థనలు",
@@ -105,6 +110,11 @@
       guestName: "Guest name",
       guests: "Guests",
       idProof: "ID proof",
+      importBookings: "Import bookings",
+      importDone: "Import complete",
+      importFile: "CSV / ICS file",
+      importInvalid: "Choose a valid CSV or ICS file",
+      importSource: "Import source",
       invalidDates: "Check-out must be after check-in",
       makemytrip: "MakeMyTrip",
       notes: "Caretaker notes",
@@ -142,6 +152,9 @@
     entryCard: document.getElementById("entryCard"),
     exportButton: document.getElementById("exportButton"),
     idProof: document.getElementById("idProof"),
+    importButton: document.getElementById("importButton"),
+    importFile: document.getElementById("importFile"),
+    importSource: document.getElementById("importSource"),
     languageToggle: document.getElementById("languageToggle"),
     monthGrid: document.getElementById("monthGrid"),
     nextMonth: document.getElementById("nextMonth"),
@@ -261,6 +274,7 @@
 
     els.resetButton.addEventListener("click", resetForm);
     els.exportButton.addEventListener("click", exportCsv);
+    els.importButton.addEventListener("click", importSelectedFile);
   }
 
   function render() {
@@ -434,9 +448,11 @@
   }
 
   function populateStaticSelects() {
-    els.platform.innerHTML = SOURCES.map(
+    const sourceOptions = SOURCES.map(
       (source) => `<option value="${source.id}">${escapeHtml(source.label)}</option>`,
     ).join("");
+    els.platform.innerHTML = sourceOptions;
+    els.importSource.innerHTML = sourceOptions;
     populateStatusSelects();
   }
 
@@ -527,76 +543,11 @@
         localStorage.removeItem(STORAGE_KEY);
       }
     }
-    const seeded = seedBookings();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
-    return seeded;
+    return [];
   }
 
   function saveBookings() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.bookings));
-  }
-
-  function seedBookings() {
-    const base = today();
-    return [
-      {
-        id: "sample-airbnb",
-        guestName: "Ravi Kumar",
-        phone: "+91 98765 43210",
-        platform: "airbnb",
-        bookingId: "AIR-WTV-1024",
-        checkIn: toISO(base),
-        checkOut: toISO(addDays(base, 2)),
-        arrivalTime: "15:00",
-        villaRoom: "Willow Villa",
-        adults: 4,
-        children: 1,
-        status: "arriving",
-        idProof: "pending",
-        email: "ravi@example.com",
-        vehicle: "AP39 AB 1234",
-        requests: "Extra towels",
-        notes: "Call before arrival",
-      },
-      {
-        id: "sample-booking",
-        guestName: "Meera Shah",
-        phone: "+91 91234 56780",
-        platform: "booking",
-        bookingId: "BDC-5521",
-        checkIn: toISO(addDays(base, 3)),
-        checkOut: toISO(addDays(base, 5)),
-        arrivalTime: "13:30",
-        villaRoom: "Willow Villa",
-        adults: 2,
-        children: 0,
-        status: "confirmed",
-        idProof: "pending",
-        email: "meera@example.com",
-        vehicle: "",
-        requests: "Late lunch",
-        notes: "",
-      },
-      {
-        id: "sample-mmt",
-        guestName: "Arjun Reddy",
-        phone: "+91 99887 76655",
-        platform: "makemytrip",
-        bookingId: "MMT-88019",
-        checkIn: toISO(addDays(base, 8)),
-        checkOut: toISO(addDays(base, 10)),
-        arrivalTime: "18:00",
-        villaRoom: "Willow Villa",
-        adults: 3,
-        children: 2,
-        status: "confirmed",
-        idProof: "collected",
-        email: "arjun@example.com",
-        vehicle: "TS09 CD 7788",
-        requests: "Baby cot",
-        notes: "Family booking",
-      },
-    ];
   }
 
   function bookingsForDate(isoDate) {
@@ -613,6 +564,329 @@
   function optionLabel(options, id) {
     const option = options.find((item) => item.id === id);
     return option ? option[state.lang] : id || t("noValue");
+  }
+
+  async function importSelectedFile() {
+    const file = els.importFile.files?.[0];
+    if (!file) {
+      toast(t("importInvalid"));
+      return;
+    }
+
+    const text = await file.text();
+    const fallbackSource = els.importSource.value || "direct";
+    const lowerName = file.name.toLowerCase();
+    const imported =
+      lowerName.endsWith(".ics") || text.includes("BEGIN:VCALENDAR")
+        ? parseIcsBookings(text, fallbackSource)
+        : parseCsvBookings(text, fallbackSource);
+
+    if (!imported.length) {
+      toast(t("importInvalid"));
+      return;
+    }
+
+    const result = mergeBookings(imported);
+    state.selectedDate = imported[0].checkIn;
+    state.currentMonth = startOfMonth(parseISO(state.selectedDate));
+    saveBookings();
+    render();
+    toast(`${t("importDone")} (${result.added + result.updated})`);
+  }
+
+  function parseCsvBookings(text, fallbackSource) {
+    const rows = parseCsvRows(text);
+    if (rows.length < 2) return [];
+
+    const headers = rows[0].map((header) => fieldForHeader(header));
+    return rows
+      .slice(1)
+      .map((row) => {
+        const raw = {};
+        headers.forEach((field, index) => {
+          if (field) raw[field] = clean(row[index]);
+        });
+
+        const source = sourceFromValue(raw.platform) || fallbackSource;
+        const checkIn = normalizeImportedDate(raw.checkIn);
+        const checkOut = normalizeImportedDate(raw.checkOut);
+        if (!checkIn || !checkOut) return null;
+
+        return normalizeBooking({
+          id: "",
+          guestName: raw.guestName || `${getSource(source).label} booking`,
+          phone: raw.phone,
+          platform: source,
+          bookingId: raw.bookingId,
+          checkIn,
+          checkOut,
+          arrivalTime: raw.arrivalTime,
+          villaRoom: raw.villaRoom || "Willow Villa",
+          adults: Number(raw.adults || 1),
+          children: Number(raw.children || 0),
+          status: normalizeStatus(raw.status),
+          idProof: normalizeIdProof(raw.idProof),
+          email: raw.email,
+          vehicle: raw.vehicle,
+          requests: raw.requests,
+          notes: raw.notes,
+        });
+      })
+      .filter(Boolean);
+  }
+
+  function parseIcsBookings(text, fallbackSource) {
+    const source = fallbackSource || "direct";
+    const unfolded = text.replace(/\r?\n[ \t]/g, "");
+    const events = unfolded.split(/BEGIN:VEVENT/i).slice(1);
+
+    return events
+      .map((eventText) => {
+        const eventBody = eventText.split(/END:VEVENT/i)[0];
+        const summary = icsText(getIcsProperty(eventBody, "SUMMARY"));
+        const description = icsText(getIcsProperty(eventBody, "DESCRIPTION"));
+        const uid = clean(getIcsProperty(eventBody, "UID"));
+        const checkIn = parseIcsDate(getIcsProperty(eventBody, "DTSTART"));
+        const rawCheckOut = parseIcsDate(getIcsProperty(eventBody, "DTEND"));
+        const phone = extractPhone(`${summary}\n${description}`);
+
+        if (!checkIn) return null;
+        const checkOut =
+          rawCheckOut && rawCheckOut > checkIn
+            ? rawCheckOut
+            : toISO(addDays(parseISO(checkIn), 1));
+
+        return normalizeBooking({
+          id: "",
+          guestName: summary || `${getSource(source).label} booking`,
+          phone,
+          platform: source,
+          bookingId: uid,
+          checkIn,
+          checkOut,
+          arrivalTime: "",
+          villaRoom: "Willow Villa",
+          adults: 1,
+          children: 0,
+          status: "confirmed",
+          idProof: "pending",
+          email: extractEmail(description),
+          vehicle: "",
+          requests: "",
+          notes: description,
+        });
+      })
+      .filter(Boolean);
+  }
+
+  function mergeBookings(imported) {
+    let added = 0;
+    let updated = 0;
+
+    imported.forEach((booking) => {
+      const existingIndex = findExistingBookingIndex(booking);
+      if (existingIndex >= 0) {
+        const existing = state.bookings[existingIndex];
+        state.bookings[existingIndex] = { ...existing, ...booking, id: existing.id };
+        updated += 1;
+        return;
+      }
+
+      state.bookings.push({ ...booking, id: createId() });
+      added += 1;
+    });
+
+    return { added, updated };
+  }
+
+  function findExistingBookingIndex(booking) {
+    if (booking.bookingId) {
+      const index = state.bookings.findIndex(
+        (item) =>
+          item.platform === booking.platform &&
+          item.bookingId &&
+          item.bookingId === booking.bookingId,
+      );
+      if (index >= 0) return index;
+    }
+
+    return state.bookings.findIndex(
+      (item) =>
+        item.platform === booking.platform &&
+        item.guestName === booking.guestName &&
+        item.checkIn === booking.checkIn &&
+        item.checkOut === booking.checkOut,
+    );
+  }
+
+  function normalizeBooking(booking) {
+    const checkIn = booking.checkIn;
+    const checkOut =
+      booking.checkOut && booking.checkOut > checkIn
+        ? booking.checkOut
+        : toISO(addDays(parseISO(checkIn), 1));
+
+    return {
+      ...booking,
+      checkOut,
+      adults: Number.isFinite(booking.adults) && booking.adults > 0 ? booking.adults : 1,
+      children:
+        Number.isFinite(booking.children) && booking.children >= 0 ? booking.children : 0,
+      status: booking.status || "confirmed",
+      idProof: booking.idProof || "pending",
+    };
+  }
+
+  function parseCsvRows(text) {
+    const rows = [];
+    let row = [];
+    let value = "";
+    let quoted = false;
+    const source = text.replace(/^\uFEFF/, "");
+
+    for (let index = 0; index < source.length; index += 1) {
+      const char = source[index];
+      const next = source[index + 1];
+
+      if (quoted) {
+        if (char === '"' && next === '"') {
+          value += '"';
+          index += 1;
+        } else if (char === '"') {
+          quoted = false;
+        } else {
+          value += char;
+        }
+        continue;
+      }
+
+      if (char === '"') {
+        quoted = true;
+      } else if (char === ",") {
+        row.push(value);
+        value = "";
+      } else if (char === "\n") {
+        row.push(value);
+        rows.push(row);
+        row = [];
+        value = "";
+      } else if (char !== "\r") {
+        value += char;
+      }
+    }
+
+    row.push(value);
+    if (row.some((cell) => clean(cell))) rows.push(row);
+    return rows;
+  }
+
+  function fieldForHeader(header) {
+    const normalized = normalizeToken(header);
+    const aliases = {
+      guestName: ["guestname", "guest", "name", "customername", "customer"],
+      phone: ["phone", "phonenumber", "mobile", "mobilenumber", "contact", "contactnumber"],
+      platform: ["platform", "source", "bookedthrough", "bookingplatform"],
+      bookingId: ["bookingid", "reservationid", "confirmationnumber", "confirmationcode"],
+      checkIn: ["checkin", "checkindate", "arrival", "arrivaldate"],
+      checkOut: ["checkout", "checkoutdate", "departure", "departuredate"],
+      arrivalTime: ["arrivaltime", "checkintime"],
+      villaRoom: ["villaroom", "villa", "room", "unit", "listing"],
+      adults: ["adults", "adult"],
+      children: ["children", "child", "kids"],
+      status: ["status", "bookingstatus"],
+      idProof: ["idproof", "idstatus", "identityproof"],
+      email: ["email", "emailaddress"],
+      vehicle: ["vehicle", "vehiclenumber", "carnumber"],
+      requests: ["requests", "specialrequests"],
+      notes: ["notes", "caretakernotes", "description"],
+    };
+
+    Object.keys(aliases).forEach((field) => {
+      aliases[field].push(normalizeToken(field), normalizeToken(COPY.en[field]), normalizeToken(COPY.te[field]));
+    });
+
+    return Object.entries(aliases).find(([, values]) => values.includes(normalized))?.[0] || "";
+  }
+
+  function getIcsProperty(eventBody, name) {
+    const upperName = name.toUpperCase();
+    const line = eventBody.split(/\r?\n/).find((item) => {
+      const separator = item.indexOf(":");
+      if (separator < 0) return false;
+      return item.slice(0, separator).split(";")[0].toUpperCase() === upperName;
+    });
+
+    if (!line) return "";
+    const separator = line.indexOf(":");
+    return separator >= 0 ? line.slice(separator + 1) : "";
+  }
+
+  function parseIcsDate(value) {
+    const match = clean(value).match(/^(\d{4})(\d{2})(\d{2})/);
+    if (!match) return "";
+    return `${match[1]}-${match[2]}-${match[3]}`;
+  }
+
+  function icsText(value) {
+    return clean(value)
+      .replace(/\\n/g, "\n")
+      .replace(/\\,/g, ",")
+      .replace(/\\;/g, ";")
+      .replace(/\\\\/g, "\\");
+  }
+
+  function sourceFromValue(value) {
+    const normalized = normalizeToken(value);
+    return SOURCES.find(
+      (source) =>
+        normalizeToken(source.id) === normalized || normalizeToken(source.label) === normalized,
+    )?.id;
+  }
+
+  function normalizeStatus(value) {
+    const normalized = normalizeToken(value);
+    return (
+      STATUS_OPTIONS.find(
+        (option) =>
+          normalizeToken(option.id) === normalized ||
+          normalizeToken(option.en) === normalized ||
+          normalizeToken(option.te) === normalized,
+      )?.id || "confirmed"
+    );
+  }
+
+  function normalizeIdProof(value) {
+    const normalized = normalizeToken(value);
+    return (
+      ID_OPTIONS.find(
+        (option) =>
+          normalizeToken(option.id) === normalized ||
+          normalizeToken(option.en) === normalized ||
+          normalizeToken(option.te) === normalized,
+      )?.id || "pending"
+    );
+  }
+
+  function normalizeImportedDate(value) {
+    const text = clean(value);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+
+    const slashMatch = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+    if (slashMatch) {
+      const [, day, month, year] = slashMatch;
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    }
+
+    const parsed = new Date(text);
+    return Number.isNaN(parsed.getTime()) ? "" : toISO(parsed);
+  }
+
+  function extractPhone(value) {
+    return clean(value.match(/(?:\+?\d[\d\s().-]{7,}\d)/)?.[0]);
+  }
+
+  function extractEmail(value) {
+    return clean(value.match(/[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+/)?.[0]);
   }
 
   function exportCsv() {
@@ -737,6 +1011,14 @@
 
   function clean(value) {
     return String(value || "").trim();
+  }
+
+  function normalizeToken(value) {
+    return clean(value)
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9\u0C00-\u0C7F]/g, "");
   }
 
   function csvCell(value) {

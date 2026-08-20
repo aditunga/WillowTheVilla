@@ -10,6 +10,7 @@
     />
     <link rel="preload" href="assets/logo.png" as="image" />
     <link rel="preload" href="assets/villa-hero.png" as="image" />
+    <link rel="icon" href="assets/logo.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -39,6 +40,9 @@
       </symbol>
       <symbol id="icon-download" viewBox="0 0 24 24">
         <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14" />
+      </symbol>
+      <symbol id="icon-upload" viewBox="0 0 24 24">
+        <path d="M12 16V4m0 0 5 5m-5-5L7 9M5 20h14" />
       </symbol>
     </svg>
 
@@ -107,6 +111,29 @@
           </div>
           <div class="selected-bookings" id="selectedBookings"></div>
         </section>
+
+        <details class="import-card" id="importCard">
+          <summary>
+            <span data-i18n="importBookings">బుకింగ్‌లు ఇంపోర్ట్ చేయి</span>
+            <svg><use href="#icon-upload"></use></svg>
+          </summary>
+
+          <div class="import-grid">
+            <label>
+              <span data-i18n="importSource">ఇంపోర్ట్ మూలం</span>
+              <select id="importSource"></select>
+            </label>
+            <label>
+              <span data-i18n="importFile">CSV / ICS ఫైల్</span>
+              <input id="importFile" type="file" accept=".csv,.ics,text/csv,text/calendar" />
+            </label>
+          </div>
+
+          <button class="primary-button import-button" id="importButton" type="button">
+            <svg><use href="#icon-upload"></use></svg>
+            <span data-i18n="importBookings">బుకింగ్‌లు ఇంపోర్ట్ చేయి</span>
+          </button>
+        </details>
 
         <details class="entry-card" id="entryCard">
           <summary>

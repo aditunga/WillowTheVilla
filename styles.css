@@ -285,6 +285,7 @@ svg {
 
 .calendar-card,
 .selected-card,
+.import-card,
 .entry-card {
   margin-top: 12px;
   border: 1px solid var(--line);
@@ -582,10 +583,12 @@ svg {
   text-align: center;
 }
 
+.import-card,
 .entry-card {
   overflow: hidden;
 }
 
+.import-card summary,
 .entry-card summary {
   display: flex;
   align-items: center;
@@ -598,12 +601,25 @@ svg {
   cursor: pointer;
 }
 
+.import-card summary::-webkit-details-marker,
 .entry-card summary::-webkit-details-marker {
   display: none;
 }
 
+.import-card .import-grid,
 .entry-card form {
   padding: 0 14px 14px;
+}
+
+.import-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 11px;
+}
+
+.import-button {
+  width: calc(100% - 28px);
+  margin: 0 14px 14px;
 }
 
 .form-grid {
@@ -684,7 +700,7 @@ textarea:focus {
   opacity: 1;
 }
 
-@media (max-width: 380px) {
+@media (max-width: 430px) {
   .site-shell {
     padding-inline: 6px;
   }
@@ -745,6 +761,7 @@ textarea:focus {
 
   .calendar-card,
   .selected-card,
+  .import-card,
   .entry-card {
     margin-top: 16px;
   }
@@ -764,6 +781,10 @@ textarea:focus {
 
   .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .import-grid {
+    grid-template-columns: 180px minmax(0, 1fr);
   }
 
   .form-grid .full {
