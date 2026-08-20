@@ -1035,6 +1035,71 @@ svg {
   font-weight: 950;
 }
 
+.stay-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f7faf8;
+}
+
+.stay-leg {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.stay-leg span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.stay-leg strong {
+  color: var(--ink);
+  font-size: 0.98rem;
+  line-height: 1.15;
+}
+
+.stay-leg small {
+  color: var(--willow);
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.stay-leg em {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 750;
+}
+
+/* The arrow doubles as the night count, so the direction of travel is obvious. */
+.stay-nights {
+  position: relative;
+  padding-top: 14px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.stay-nights::before {
+  content: "→";
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  color: var(--line);
+  font-size: 1rem;
+  transform: translateX(-50%);
+}
+
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

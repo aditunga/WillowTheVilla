@@ -75,6 +75,64 @@ module.exports = async function run() {
     return chips.join(" | ");
   });
 
+  await test("the stay is stated once, not as four repeating tiles", () => {
+    const english = startApp({ lang: "en", bookings: seed });
+    english.click(`#monthGrid [data-date="${day(0)}"]`);
+    const card = english.$$("#selectedBookings .guest-card").find((c) => /Sita/.test(c.textContent));
+    assert(card, "no card for Sita");
+
+    const summary = card.querySelector(".stay-summary");
+    assert(summary, "no stay summary");
+    const legs = summary.querySelectorAll(".stay-leg");
+    assert(legs.length === 2, `${legs.length} legs`);
+    assert(/Check-in/i.test(legs[0].textContent), legs[0].textContent);
+    assert(/2:00/.test(legs[0].textContent), `no check-in time: ${legs[0].textContent}`);
+    assert(/11:00/.test(legs[1].textContent), `no checkout time: ${legs[1].textContent}`);
+
+    // The tiles that repeated all of this are gone.
+    const labels = [...card.querySelectorAll(".detail span")].map((n) => n.textContent);
+    ["Dates", "Check-in time", "Arrival time", "Checkout time"].forEach((gone) => {
+      assert(!labels.includes(gone), `"${gone}" tile is still there`);
+    });
+    const result = `${summary.querySelector(".stay-nights").textContent.trim()}, tiles: ${labels.join(", ")}`;
+    english.close();
+    return result;
+  });
+
+  await test("one night reads as a night, not 1 nights", () => {
+    const single = startApp({
+      lang: "en",
+      bookings: [{
+        id: "one", guestName: "One Night", phone: "", platform: "airbnb",
+        checkIn: "2026-08-20", checkOut: "2026-08-21", checkInTime: "14:00",
+        checkoutTime: "11:00", adults: 1, children: 0, pets: 0,
+        status: "confirmed", idProof: "pending", villaRoom: "Willow Villa",
+      }],
+    });
+    single.click(`#monthGrid [data-date="2026-08-20"]`);
+    const nights = single.$(".stay-nights").textContent.trim();
+    assert(nights === "1 night", `reads "${nights}"`);
+    single.close();
+    return nights;
+  });
+
+  await test("an arrival time is kept, not dropped with the tiles", () => {
+    const late = startApp({
+      lang: "en",
+      bookings: [{
+        id: "late", guestName: "Late Arrival", phone: "", platform: "airbnb",
+        checkIn: "2026-08-20", checkOut: "2026-08-22", checkInTime: "14:00",
+        checkoutTime: "11:00", arrivalTime: "18:30", adults: 1, children: 0, pets: 0,
+        status: "confirmed", idProof: "pending", villaRoom: "Willow Villa",
+      }],
+    });
+    late.click(`#monthGrid [data-date="2026-08-20"]`);
+    const leg = late.$(".stay-leg");
+    assert(/6:30/.test(leg.textContent), `arrival time lost: ${leg.textContent}`);
+    late.close();
+    return leg.textContent.replace(/\s+/g, " ").trim();
+  });
+
   await test("owner-only fields stay hidden", () => {
     const text = $("#selectedBookings").textContent;
     assert(!text.includes("HMABC123"), "booking id leaked");

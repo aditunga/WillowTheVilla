@@ -149,6 +149,7 @@
       confirmedRevenue: "కన్ఫర్మ్డ్ ఆదాయం",
       logout: "లాగౌట్",
       notes: "కేర్‌టేకర్ నోట్లు",
+      night: "రాత్రి",
       nights: "రాత్రులు",
       noValue: "లేదు",
       noteTeluguPreview: "తెలుగు నోట్",
@@ -251,6 +252,7 @@
       confirmedRevenue: "Confirmed revenue",
       logout: "Logout",
       notes: "Caretaker notes",
+      night: "night",
       nights: "nights",
       noValue: "None",
       noteTeluguPreview: "Telugu note",
@@ -1612,7 +1614,7 @@
         `
       : `<span class="contact-missing">${escapeHtml(t("phonePending"))}</span>`;
     const guestCount = `${booking.adults || 0} ${t("adults")}, ${booking.children || 0} ${t("children")}, ${booking.pets || 0} ${t("pets")}`;
-    const dateText = `${formatShortDate(booking.checkIn)} ${checkInTimeText(booking)} - ${formatShortDate(booking.checkOut)} ${checkoutTimeText(booking)} (${nights(booking)} ${t("nights")})`;
+    const staySummary = renderStaySummary(booking);
     const notes = noteForDisplay(booking.notes);
     const optionalDetails = [
       detail(t("requests"), booking.requests, true),
@@ -1654,11 +1656,9 @@
           </div>
         </div>
 
+        ${staySummary}
+
         <div class="detail-grid">
-          ${detail(t("dateRange"), dateText)}
-          ${detail(t("checkInTime"), displayTime(booking.checkInTime, DEFAULT_CHECK_IN_TIME))}
-          ${detail(t("arrivalTime"), booking.arrivalTime || t("noValue"))}
-          ${detail(t("checkoutTime"), displayTime(booking.checkoutTime, DEFAULT_CHECKOUT_TIME))}
           ${detail(t("villaRoom"), booking.villaRoom)}
           ${detail(t("guests"), guestCount)}
           ${adminDetails}
@@ -1671,6 +1671,42 @@
         </div>
       </article>
     `;
+  }
+
+  // The dates, check-in time, arrival time and checkout time were four tiles
+  // repeating the same stay. This is one block that says it once.
+  function renderStaySummary(booking) {
+    const stayNights = nights(booking);
+    const arrival = clean(booking.arrivalTime);
+    const leg = (label, iso, time, note) => `
+      <div class="stay-leg">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(formatStayDate(iso))}</strong>
+        <small>${escapeHtml(time)}</small>
+        ${note ? `<em>${escapeHtml(note)}</em>` : ""}
+      </div>
+    `;
+
+    return `
+      <div class="stay-summary">
+        ${leg(
+          t("checkIn"),
+          booking.checkIn,
+          displayTime(booking.checkInTime, DEFAULT_CHECK_IN_TIME),
+          arrival ? `${t("arrivalTime")}: ${displayTime(arrival, "")}` : "",
+        )}
+        <span class="stay-nights">${stayNights} ${escapeHtml(stayNights === 1 ? t("night") : t("nights"))}</span>
+        ${leg(t("checkOut"), booking.checkOut, displayTime(booking.checkoutTime, DEFAULT_CHECKOUT_TIME), "")}
+      </div>
+    `;
+  }
+
+  function formatStayDate(value) {
+    return new Intl.DateTimeFormat(locale(), {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }).format(parseISO(value));
   }
 
   function detail(label, value, full = false) {
@@ -3060,15 +3096,7 @@
     }).format(new Date(milliseconds));
   }
 
-  function checkInTimeText(booking) {
-    const time = displayTime(booking.checkInTime, DEFAULT_CHECK_IN_TIME);
-    return state.lang === "te" ? `${time} నుండి` : `from ${time}`;
-  }
 
-  function checkoutTimeText(booking) {
-    const time = displayTime(booking.checkoutTime, DEFAULT_CHECKOUT_TIME);
-    return state.lang === "te" ? `${time} వరకు` : `until ${time}`;
-  }
 
   function nights(booking) {
     return Math.max(1, Math.round((parseISO(booking.checkOut) - parseISO(booking.checkIn)) / DAY_MS));
