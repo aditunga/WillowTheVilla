@@ -1432,25 +1432,28 @@
       `;
     }).join("");
 
+    const monthEnd = addDays(startOfMonth(addDays(firstDay, 40)), -1);
     els.monthGrid.style.setProperty("--week-count", String(weeks));
-    els.monthGrid.innerHTML = `${cells}<div class="booking-overlay" aria-hidden="true">${renderBookingBars(gridStart, weeks)}</div>`;
+    els.monthGrid.innerHTML = `${cells}<div class="booking-overlay" aria-hidden="true">${renderBookingBars(gridStart, weeks, firstDay, monthEnd)}</div>`;
   }
 
   // One bar per booking per week, laid over the grid so a name can run across the
   // days it covers. The grid is measured in half days: a stay starts at the middle
   // of the arrival day and ends at the middle of the departure day, so a checkout
   // morning is visible and a turnover day shows one guest leaving and one arriving.
-  function renderBookingBars(gridStart, weeks) {
-    const lastCell = addDays(gridStart, weeks * 7 - 1);
+  function renderBookingBars(gridStart, weeks, monthStart, monthEnd) {
     const segments = [];
 
     activeBookings().forEach((booking) => {
       const arrival = parseISO(booking.checkIn);
       const departure = parseISO(booking.checkOut);
-      if (departure < gridStart || arrival > lastCell) return;
+      if (departure < monthStart || arrival > monthEnd) return;
 
-      const from = arrival < gridStart ? gridStart : arrival;
-      const to = departure > lastCell ? lastCell : departure;
+      // Clamped to the month on show. Days from the neighbouring months are blank
+      // spacers with nothing to tap, so drawing a bar on one offers a booking that
+      // cannot be opened.
+      const from = arrival < monthStart ? monthStart : arrival;
+      const to = departure > monthEnd ? monthEnd : departure;
 
       let cursor = from;
       while (cursor <= to) {

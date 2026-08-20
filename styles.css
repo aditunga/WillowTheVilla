@@ -499,7 +499,9 @@ svg {
   display: grid;
   grid-template-columns: repeat(14, minmax(0, 1fr));
   column-gap: 0;
-  row-gap: 4px;
+  /* Shared with .booking-overlay: the two grids must gap identically or the bars
+     drift off their rows. Breakpoints change the variable, never the property. */
+  row-gap: var(--row-gap, 4px);
   grid-auto-rows: minmax(var(--day-height, 62px), auto);
 }
 
@@ -513,7 +515,7 @@ svg {
   grid-template-columns: repeat(14, minmax(0, 1fr));
   grid-template-rows: repeat(var(--week-count, 6), minmax(0, 1fr));
   column-gap: 0;
-  row-gap: 4px;
+  row-gap: var(--row-gap, 4px);
   /* Above .day-cell.selected, which is opaque white at z-index 4 and was hiding
      every bar crossing the selected day. Still below the modals at 80. */
   z-index: 5;
@@ -1323,7 +1325,7 @@ textarea:focus {
 
   .month-grid {
     --day-height: 58px;
-    row-gap: 3px;
+    --row-gap: 3px;
   }
 
   .day-cell {
@@ -1417,7 +1419,7 @@ textarea:focus {
   }
 
   .month-grid {
-    row-gap: 7px;
+    --row-gap: 7px;
   }
 
   .form-grid {

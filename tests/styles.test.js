@@ -139,6 +139,22 @@ module.exports = async function run() {
       .join(", ");
   });
 
+  await test("both grids take their row gap from the same place", () => {
+    // A breakpoint changed row-gap on .month-grid only, so the overlay rows drifted
+    // away from the day rows. Both must read one variable.
+    const rowGaps = rulesFor("row-gap");
+    const grid = rowGaps.find((rule) => /^\.month-grid\b/.test(rule.selector));
+    const overlay = rowGaps.find((rule) => /^\.booking-overlay\b/.test(rule.selector));
+    assert(grid.value === overlay.value, `grid ${grid.value} vs overlay ${overlay.value}`);
+    assert(grid.value.includes("var("), `row-gap is hard coded: ${grid.value}`);
+
+    const overrides = rowGaps.filter(
+      (rule) => /\.(month-grid|booking-overlay)\b/.test(rule.selector) && !rule.value.includes("var("),
+    );
+    assert(!overrides.length, overrides.map((r) => `${r.selector} { row-gap: ${r.value} }`).join(" | "));
+    return `both read ${grid.value}`;
+  });
+
   await test("the weekday header does not take a day row's height", () => {
     // Sharing grid-auto-rows with .month-grid left a tall empty band under the
     // weekday labels.

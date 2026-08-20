@@ -192,12 +192,12 @@ module.exports = async function run() {
   });
 
   await test("a stay running into the next week is named again on the Sunday", () => {
-    // A fortnight is guaranteed to cross a Sunday whatever day the test runs.
+    // 5 to 12 August 2026 crosses the Saturday/Sunday break inside one month.
     const long = startApp({
       lang: "en",
       bookings: [{
         id: "long", guestName: "Sateesan Nair", phone: "9848012345", platform: "makemytrip",
-        checkIn: day(1), checkOut: day(15), checkInTime: "14:00", checkoutTime: "11:00",
+        checkIn: "2026-08-05", checkOut: "2026-08-12", checkInTime: "14:00", checkoutTime: "11:00",
         adults: 2, children: 0, pets: 0, status: "confirmed", idProof: "pending",
         villaRoom: "Willow Villa",
       }],
@@ -229,6 +229,39 @@ module.exports = async function run() {
     keyboard.close();
     void root;
     return "modal height follows the keyboard";
+  });
+
+  await test("no bar is drawn on a day that cannot be tapped", () => {
+    // A stay in the previous month, overlapping the spacer cells of this one.
+    const spill = startApp({
+      lang: "en",
+      bookings: [
+        { id: "prev", guestName: "Previous Month", phone: "", platform: "booking",
+          checkIn: "2026-07-28", checkOut: "2026-07-31", checkInTime: "14:00",
+          checkoutTime: "11:00", adults: 1, children: 0, pets: 0,
+          status: "confirmed", idProof: "pending", villaRoom: "Willow Villa" },
+        { id: "across", guestName: "Across The Turn", phone: "", platform: "airbnb",
+          checkIn: "2026-07-30", checkOut: "2026-08-03", checkInTime: "14:00",
+          checkoutTime: "11:00", adults: 1, children: 0, pets: 0,
+          status: "confirmed", idProof: "pending", villaRoom: "Willow Villa" },
+      ],
+    });
+    const bars = spill.$$("#monthGrid .booking-bar");
+    // The July-only stay has nothing to show in August.
+    assert(!bars.some((bar) => /Previous/.test(bar.textContent)), "a bar was drawn for another month");
+    // The one crossing the turn starts at 1 August with a square end, so it reads
+    // as continuing rather than beginning.
+    // Only the crossing stay is left, as two row segments: the Saturday 1 August
+    // sliver and the rest of the following week.
+    assert(bars.length === 2, `${bars.length} bars`);
+    assert(!bars.some((bar) => bar.classList.contains("opens")), "it claims to begin this month");
+    assert(bars.filter((bar) => bar.classList.contains("closes")).length === 1, "wrong number of ends");
+    const starts = bars.map((bar) => Number(bar.getAttribute("style").match(/grid-column:\s*(\d+)/)[1]));
+    // 1 Aug 2026 is a Saturday: day index 6, so its first half column is 13. The
+    // next segment picks up at the start of the following row.
+    assert(starts.includes(13) && starts.includes(1), `starts at ${starts.join(", ")}`);
+    spill.close();
+    return `spacer days carry no bars; segments start at ${starts.join(" and ")}`;
   });
 
   await test("a turnover day lists the arriving guest before the leaving one", () => {
