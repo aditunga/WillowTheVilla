@@ -101,6 +101,7 @@
       adminLoginError: "యూజర్ పేరు లేదా పాస్‌వర్డ్ తప్పు",
       adminPassword: "పాస్‌వర్డ్",
       adminEmailMissing: "Supabase adminEmail సెట్ చేయాలి",
+      adminCloudUnavailable: "క్లౌడ్ లాగిన్ ఇంకా సిద్ధం కాలేదు. ఇంటర్నెట్ చూసి మళ్లీ ప్రయత్నించండి.",
       adminEmailProviderOff: "Supabase లో ఈమెయిల్ లాగిన్ ఆన్ చేయాలి",
       adminEmailUnconfirmed: "ఓనర్ ఈమెయిల్ ఇంకా కన్ఫర్మ్ కాలేదు",
       adminRateLimited: "చాలా ప్రయత్నాలు. కాసేపు ఆగి మళ్లీ ప్రయత్నించండి.",
@@ -196,6 +197,7 @@
       adminLoginError: "Wrong username or password",
       adminPassword: "Password",
       adminEmailMissing: "Set adminEmail in supabase-config.js",
+      adminCloudUnavailable: "Cloud sign-in is not ready yet. Check the connection and try again.",
       adminEmailProviderOff: "Email sign-in is switched off in Supabase",
       adminEmailUnconfirmed: "The owner email has not been confirmed in Supabase",
       adminRateLimited: "Too many attempts. Wait a moment and try again.",
@@ -297,6 +299,7 @@
     remoteConfig: null,
     remoteError: "",
     remoteNeedsSetup: false,
+    remoteReady: null,
     searchTerm: "",
     selectedDate: toISO(today()),
   };
@@ -372,7 +375,7 @@
     registerServiceWorker();
     if (state.isAdmin && takePendingOwnerPanel()) openAdminPanel();
 
-    hydrateRemote().catch((error) => {
+    state.remoteReady = hydrateRemote().catch((error) => {
       state.remoteError = error.message || String(error);
       console.warn("Willow cloud startup failed", error);
       renderSyncStatus();
@@ -587,6 +590,23 @@
       event.preventDefault();
       const username = clean(els.adminUsername.value);
       const password = clean(els.adminPassword.value);
+
+      // The client is created after a script downloads, so a quick typist can arrive
+      // here before it exists. Wait for it rather than quietly checking the password
+      // against the built-in hash, which would report a correct password as wrong.
+      if (state.remoteConfig && !state.remoteClient && state.remoteReady) {
+        els.adminLoginError.hidden = true;
+        await withTimeout(state.remoteReady, REMOTE_TIMEOUT_MS, "cloud sign-in timed out").catch(
+          () => undefined,
+        );
+      }
+
+      if (state.remoteConfig && !state.remoteClient) {
+        els.adminLoginError.textContent = t("adminCloudUnavailable");
+        els.adminLoginError.hidden = false;
+        return;
+      }
+
       if (state.remoteClient) {
         try {
           await signInRemoteAdmin(username, password);

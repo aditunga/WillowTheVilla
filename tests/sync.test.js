@@ -166,6 +166,22 @@ module.exports = async function run() {
     return shown;
   });
 
+  await test("a slow cloud client never falls back to the built-in password", async () => {
+    const slow = startApp({ bookings: [], lang: "en", supabase: { publicRows, privateRows } });
+    // Sign in immediately, before boot has had a chance to create the client.
+    slow.click("#adminButton");
+    slow.$("#adminUsername").value = "Venu";
+    slow.$("#adminPassword").value = TEST_PASSWORD;
+    slow.submit("#adminLoginForm");
+    await settleBoot(slow);
+    await settleBoot(slow);
+    const shown = slow.$("#adminLoginError").hidden ? "" : slow.$("#adminLoginError").textContent;
+    assert(!/Wrong username or password/.test(shown), `reported as a bad password: ${shown}`);
+    assert(slow.server.signedIn, "did not sign in against the server");
+    slow.close();
+    return "signed in against Supabase, not the local hash";
+  });
+
   owner.close();
 
   // --- landing back on the page after that reload ---------------------------
