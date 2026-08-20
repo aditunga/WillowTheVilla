@@ -1,3 +1,10 @@
 node_modules/
 package-lock.json
 .DS_Store
+
+# Never commit key material. Keep secrets out of a public repository.
+AnonSecret.rtf
+*secret*
+*Secret*
+.env
+.env.*
