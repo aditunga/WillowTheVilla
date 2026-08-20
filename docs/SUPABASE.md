@@ -87,9 +87,11 @@ npm run check:supabase
 It reads `supabase-config.js`, calls the project with the publishable key, and lists
 what is done and what is left.
 
-Migrations can also be applied by GitHub Actions on push. See
-`.github/workflows/supabase-migrations.yml`, which needs two repository secrets,
-`SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD`. Without them it skips.
+Migrations are applied by hand in the SQL editor. A GitHub Actions workflow was
+tried and removed: every run failed at startup with no logs and no steps, which is
+GitHub refusing the run rather than anything in the file, and user-defined Actions
+appear not to run on this account. The Pages deploy is unaffected, since a branch
+based Pages site does not use them.
 
 ## 6. First Login Migration
 

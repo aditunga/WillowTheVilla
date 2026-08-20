@@ -59,7 +59,8 @@
 - [x] Point supabase-config.js at the Supabase project with the publishable key.
 - [x] Ship the schema as a Supabase migration and keep key material out of the repository.
 - [x] Say "cloud storage is not set up yet" instead of "offline" when the project has no tables.
-- [x] Add `npm run check:supabase` and a migrations workflow.
+- [x] Add `npm run check:supabase`.
+- [x] Delete the duplicate Booking.com bookings.
 - [x] Run the schema migration on the Supabase project.
 - [x] Create the owner Auth user and fill in adminEmail.
 - [x] Share one calendar across every phone through Supabase.
