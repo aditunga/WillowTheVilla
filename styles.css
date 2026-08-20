@@ -90,9 +90,15 @@ main {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 8px;
-  padding: 7px 0 9px;
-  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  overflow: hidden;
+  padding: 10px;
+  border: 1px solid rgba(20, 93, 59, 0.16);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(90deg, rgba(246, 247, 242, 0.96), rgba(246, 247, 242, 0.78) 58%, rgba(246, 247, 242, 0.48)),
+    url("assets/listing/willow-2.jpeg") center 48% / cover;
   backdrop-filter: blur(18px);
+  box-shadow: var(--soft-shadow);
 }
 
 .brand {
@@ -256,48 +262,6 @@ svg {
   stroke-width: 2;
 }
 
-.visual-band {
-  position: relative;
-  order: 4;
-  width: 100%;
-  max-width: 100%;
-  min-height: 126px;
-  overflow: hidden;
-  border: 1px solid rgba(20, 33, 27, 0.12);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  isolation: isolate;
-}
-
-.visual-band::after {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  content: "";
-  background:
-    linear-gradient(90deg, rgba(8, 16, 12, 0.68), rgba(8, 16, 12, 0.16)),
-    linear-gradient(0deg, rgba(8, 16, 12, 0.36), transparent 62%);
-}
-
-.visual-band img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.visual-copy {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  align-content: end;
-  min-height: 126px;
-  padding: 14px;
-  color: #fff;
-}
-
-.visual-copy p,
 .month-heading p,
 .section-title p {
   margin: 0 0 4px;
@@ -306,18 +270,6 @@ svg {
   font-weight: 900;
   letter-spacing: 0;
   text-transform: uppercase;
-}
-
-.visual-copy p {
-  color: #bde7cf;
-}
-
-.visual-copy h1 {
-  width: min(12ch, 100%);
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-size: clamp(1.75rem, 8.8vw, 2.7rem);
-  line-height: 1;
 }
 
 .calendar-card,
@@ -989,8 +941,7 @@ textarea:focus {
   .calendar-card,
   .selected-card,
   .entry-card,
-  .import-card,
-  .visual-band {
+  .import-card {
     width: 100%;
     max-width: 100%;
   }
@@ -1056,7 +1007,7 @@ textarea:focus {
     justify-content: space-between;
     gap: 10px;
     min-height: 72px;
-    padding: 8px 0;
+    padding: 10px 12px;
   }
 
   .header-actions {
@@ -1089,20 +1040,6 @@ textarea:focus {
 
   .brand strong {
     font-size: 1.28rem;
-  }
-
-  .visual-band,
-  .visual-copy {
-    min-height: 240px;
-  }
-
-  .visual-copy {
-    padding: 28px;
-  }
-
-  .visual-copy h1 {
-    font-size: clamp(2.4rem, 7vw, 4.2rem);
-    line-height: 0.96;
   }
 
   .legend {
