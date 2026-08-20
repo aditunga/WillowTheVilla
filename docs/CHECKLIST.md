@@ -56,5 +56,10 @@
 - [x] Show the guest name on every booking bar, including week continuations, and drop the initial circle that was crowding it out.
 - [x] Never let an empty Supabase table wipe bookings still held on a device.
 - [x] Cover the shared-storage path with tests against a stubbed Supabase.
-- [ ] Fill in supabase-config.js so all phones share one calendar.
+- [x] Point supabase-config.js at the Supabase project with the publishable key.
+- [x] Ship the schema as a Supabase migration and keep key material out of the repository.
+- [x] Say "cloud storage is not set up yet" instead of "offline" when the project has no tables.
+- [x] Add `npm run check:supabase` and a migrations workflow.
+- [ ] Run the schema migration on the Supabase project.
+- [ ] Create the owner Auth user and fill in adminEmail.
 - [ ] Add authorized booking sync from email/API/channel manager when credentials/export access is available.

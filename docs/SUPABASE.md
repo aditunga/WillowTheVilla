@@ -73,7 +73,20 @@ Supabase issues two keys on that page and only one of them belongs here:
   chat or screenshot. If it is exposed, roll it in `Project Settings` -> `API Keys`
   straight away.
 
-## 5. First Login Migration
+## 5. Check It
+
+```sh
+npm run check:supabase
+```
+
+It reads `supabase-config.js`, calls the project with the publishable key, and lists
+what is done and what is left.
+
+Migrations can also be applied by GitHub Actions on push. See
+`.github/workflows/supabase-migrations.yml`, which needs two repository secrets,
+`SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD`. Without them it skips.
+
+## 6. First Login Migration
 
 If this browser already has local bookings saved and the Supabase tables are empty, the first successful owner login will copy the local bookings into Supabase.
 

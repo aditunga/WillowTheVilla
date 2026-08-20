@@ -39,6 +39,11 @@ npm install
 npm test
 ```
 
+`npm run check:supabase` reports whether shared storage is wired up: whether the
+project answers, whether the schema has been applied, whether owner-only rows are
+closed to visitors, and whether owner sign-in is configured. It uses only the
+publishable key.
+
 `npm run serve` starts a local static server on <http://localhost:4173> if you want
 to click through the site by hand.
 

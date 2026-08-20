@@ -99,6 +99,19 @@ module.exports = async function run() {
     failing.close();
   });
 
+  await test("a project without the schema says so, not \"offline\"", async () => {
+    const bare = startApp({
+      bookings: [],
+      lang: "en",
+      supabase: { publicRows: [], missingTables: true },
+    });
+    await settleBoot(bare);
+    const status = bare.$("#syncStatus").textContent;
+    assert(status === "Cloud storage is not set up yet", status);
+    bare.close();
+    return status;
+  });
+
   phone.close();
 
   // --- the owner's device ---------------------------------------------------

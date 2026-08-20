@@ -177,6 +177,7 @@
       searchNoResults: "ఫలితాలు లేవు",
       searchPlaceholder: "అతిథి పేరు, ఫోన్ లేదా బుకింగ్ ఐడి",
       syncLocalOnly: "ఈ ఫోన్‌లో మాత్రమే సేవ్",
+      syncNotSetUp: "క్లౌడ్ ఇంకా సెటప్ కాలేదు",
       syncOffline: "ఆఫ్‌లైన్ — సేవ్ చేసిన కాపీ",
       syncRefresh: "రిఫ్రెష్",
       syncUpdated: "అప్‌డేట్",
@@ -268,6 +269,7 @@
       searchNoResults: "No matches",
       searchPlaceholder: "Guest name, phone or booking ID",
       syncLocalOnly: "Saved on this device",
+      syncNotSetUp: "Cloud storage is not set up yet",
       syncOffline: "Offline — showing saved copy",
       syncRefresh: "Refresh",
       syncUpdated: "Updated",
@@ -288,6 +290,7 @@
     remoteClient: null,
     remoteConfig: null,
     remoteError: "",
+    remoteNeedsSetup: false,
     searchTerm: "",
     selectedDate: toISO(today()),
   };
@@ -965,6 +968,13 @@
     state.isAdmin = true;
   }
 
+  // Reaching the project but finding no tables is a setup step left undone, not a
+  // network problem, and saying "offline" would send someone looking in the wrong place.
+  function isMissingTableError(error) {
+    if (error?.code === "PGRST205" || error?.code === "42P01") return true;
+    return /schema cache|does not exist|relation .* does not exist/i.test(error?.message || "");
+  }
+
   function isRemoteOwner(user) {
     const metadata = user?.app_metadata || {};
     return metadata.willow_role === "owner" || metadata.role === "owner";
@@ -1072,6 +1082,9 @@
     if (canSync && state.isSyncing) {
       text = t("syncing");
       tone = "busy";
+    } else if (canSync && state.remoteNeedsSetup) {
+      text = t("syncNotSetUp");
+      tone = "warn";
     } else if (canSync && state.remoteError) {
       text = t("syncOffline");
       tone = "warn";
@@ -1647,15 +1660,18 @@
           if (state.isAdmin) await syncRemoteBookings(localBookings);
           persistBookings(localBookings);
           state.remoteError = "";
+          state.remoteNeedsSetup = false;
           state.lastSyncedAt = Date.now();
           return localBookings;
         }
         persistBookings(remoteBookings);
         state.remoteError = "";
+        state.remoteNeedsSetup = false;
         state.lastSyncedAt = Date.now();
         return remoteBookings;
       } catch (error) {
         state.remoteError = error.message || String(error);
+        state.remoteNeedsSetup = isMissingTableError(error);
         console.warn("Willow cloud sync unavailable", error);
       }
     }

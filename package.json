@@ -2,10 +2,11 @@
   "name": "willow-the-villa-calendar",
   "version": "1.0.0",
   "private": true,
-  "description": "Static Telugu-first booking calendar for Willow The Villa. The site itself ships as plain HTML/CSS/JS — this package only exists for the test run.",
+  "description": "Static Telugu-first booking calendar for Willow The Villa. The site itself ships as plain HTML/CSS/JS \u2014 this package only exists for the test run.",
   "scripts": {
     "test": "node tests/run.js",
-    "serve": "python3 -m http.server 4173"
+    "serve": "python3 -m http.server 4173",
+    "check:supabase": "node scripts/check-supabase.mjs"
   },
   "devDependencies": {
     "jsdom": "^26.0.0"

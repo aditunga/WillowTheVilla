@@ -22,7 +22,12 @@ function isoDate(date) {
 
 // A stand-in for the Supabase client, so the shared-storage path can be exercised
 // without a real project. Mirrors only the calls app.js actually makes.
-function createSupabaseStub({ publicRows = [], privateRows = [], failReads = false } = {}) {
+function createSupabaseStub({
+  publicRows = [],
+  privateRows = [],
+  failReads = false,
+  missingTables = false,
+} = {}) {
   const server = {
     publicRows: publicRows.map((row) => ({ ...row })),
     privateRows: privateRows.map((row) => ({ ...row })),
@@ -38,6 +43,15 @@ function createSupabaseStub({ publicRows = [], privateRows = [], failReads = fal
     const settle = async () => {
       if (builder.mode === "select") {
         server.reads += 1;
+        if (missingTables) {
+          return {
+            data: null,
+            error: {
+              code: "PGRST205",
+              message: `Could not find the table 'public.${name}' in the schema cache`,
+            },
+          };
+        }
         if (failReads) return { data: null, error: { message: "network down" } };
         if (name === "bookings") return { data: server.publicRows.map((row) => ({ ...row })), error: null };
         const rows = server.privateRows.filter(
