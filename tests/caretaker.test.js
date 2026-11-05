@@ -100,7 +100,7 @@ module.exports = async function run() {
   });
 
   await test("one night reads as a night, not 1 nights", () => {
-    const single = startApp({
+    const single = startApp({ now: "2026-08-15",
       lang: "en",
       bookings: [{
         id: "one", guestName: "One Night", phone: "", platform: "airbnb",
@@ -117,7 +117,7 @@ module.exports = async function run() {
   });
 
   await test("an arrival time is kept, not dropped with the tiles", () => {
-    const late = startApp({
+    const late = startApp({ now: "2026-08-15",
       lang: "en",
       bookings: [{
         id: "late", guestName: "Late Arrival", phone: "", platform: "airbnb",
@@ -198,7 +198,7 @@ module.exports = async function run() {
   await test("a stay runs from midday of arrival to midday of departure", () => {
     // A three night stay inside one week: half of the arrival day, two whole days,
     // half of the departure day = 6 half columns.
-    const single = startApp({
+    const single = startApp({ now: "2026-08-15",
       lang: "en",
       bookings: [{
         id: "mid", guestName: "Midday Guest", phone: "", platform: "airbnb",
@@ -220,7 +220,7 @@ module.exports = async function run() {
   });
 
   await test("a turnover day carries the departing and arriving halves", () => {
-    const turnover = startApp({
+    const turnover = startApp({ now: "2026-08-15",
       lang: "en",
       bookings: [
         { id: "out", guestName: "Leaves Wed", phone: "", platform: "airbnb",
@@ -251,7 +251,7 @@ module.exports = async function run() {
 
   await test("a stay running into the next week is named again on the Sunday", () => {
     // 5 to 12 August 2026 crosses the Saturday/Sunday break inside one month.
-    const long = startApp({
+    const long = startApp({ now: "2026-08-15",
       lang: "en",
       bookings: [{
         id: "long", guestName: "Sateesan Nair", phone: "9848012345", platform: "makemytrip",
@@ -291,7 +291,7 @@ module.exports = async function run() {
 
   await test("no bar is drawn on a day that cannot be tapped", () => {
     // A stay in the previous month, overlapping the spacer cells of this one.
-    const spill = startApp({
+    const spill = startApp({ now: "2026-08-15",
       lang: "en",
       bookings: [
         { id: "prev", guestName: "Previous Month", phone: "", platform: "booking",

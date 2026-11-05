@@ -2,6 +2,7 @@
 const specs = [
   "./caretaker.test.js",
   "./owner.test.js",
+  "./owner-add.test.js",
   "./import.test.js",
   "./pdf.test.js",
   "./excel.test.js",

@@ -1,6 +1,6 @@
 // Network-first shell cache: the app always prefers fresh files, and falls back
 // to the last good copy when the villa loses signal. Bump CACHE to evict old files.
-const CACHE = "willow-shell-v1";
+const CACHE = "willow-shell-v2";
 const SHELL = [
   "./",
   "./index.html",

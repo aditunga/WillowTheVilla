@@ -3,6 +3,8 @@
   const LANGUAGE_KEY = "willow-the-villa-language";
   const OWNER_SESSION_KEY = "willow-the-villa-owner-session";
   const OWNER_PANEL_KEY = "willow-the-villa-open-owner-panel";
+  // Set only when the owner asks to stay signed in on their own phone.
+  const OWNER_REMEMBER_KEY = "willow-the-villa-owner-remembered";
   const ADMIN_USERNAME = "Venu";
   const ADMIN_PASSWORD_HASH = 862899077;
   const DEFAULT_CHECK_IN_TIME = "14:00";
@@ -95,6 +97,26 @@
   const COPY = {
     te: {
       addEditBooking: "త్వరగా బుకింగ్ జోడించు",
+      addBooking: "బుకింగ్ జోడించు",
+      addOnDate: "ఈ తేదీ నుండి బుకింగ్ జోడించు",
+      fewer: "తగ్గించు",
+      fewerNights: "ఒక రాత్రి తక్కువ",
+      ledgerEmpty: "ఇక్కడ బుకింగ్‌లు లేవు",
+      ledgerPast: "గతవి",
+      ledgerTitle: "బుకింగ్‌లు & చెల్లింపులు",
+      ledgerUpcoming: "రాబోయేవి",
+      more: "పెంచు",
+      moreNights: "ఒక రాత్రి ఎక్కువ",
+      noAmount: "మొత్తం లేదు",
+      overlapInline: "ఈ తేదీల్లో ఇప్పటికే బుకింగ్ ఉంది:",
+      pasteFill: "ఫారం నింపు",
+      pasteFilled: "వివరాలు నింపబడ్డాయి. సేవ్ చేసే ముందు ఒకసారి చూసుకోండి.",
+      pasteNothing: "ఈ మెసేజ్‌లో బుకింగ్ వివరాలు దొరకలేదు",
+      pastePhoneOnly: "ఫోన్ నంబర్ మాత్రమే దొరికింది",
+      pastePlaceholder: "Airbnb, Booking.com లేదా MakeMyTrip ఈమెయిల్ / మెసేజ్ ఇక్కడ పేస్ట్ చేయండి",
+      pasteTitle: "బుకింగ్ మెసేజ్ పేస్ట్ చేసి ఫారం నింపండి",
+      rememberMe: "ఈ ఫోన్‌లో లాగిన్‌గా ఉంచు",
+      stayLength: "ఎన్ని రాత్రులు",
       advancedDetails: "మరిన్ని వివరాలు",
       adults: "పెద్దలు",
       admin: "అడ్మిన్",
@@ -198,6 +220,26 @@
     },
     en: {
       addEditBooking: "Quick add booking",
+      addBooking: "Add booking",
+      addOnDate: "Add a booking from this date",
+      fewer: "Fewer",
+      fewerNights: "One night fewer",
+      ledgerEmpty: "No bookings here",
+      ledgerPast: "Past",
+      ledgerTitle: "Bookings and payments",
+      ledgerUpcoming: "Upcoming",
+      more: "More",
+      moreNights: "One night more",
+      noAmount: "No amount",
+      overlapInline: "Already booked on these dates:",
+      pasteFill: "Fill in the form",
+      pasteFilled: "Details filled in. Check them before saving.",
+      pasteNothing: "No booking details found in that text",
+      pastePhoneOnly: "Only a phone number was found",
+      pastePlaceholder: "Paste the confirmation email or message from Airbnb, Booking.com or MakeMyTrip",
+      pasteTitle: "Paste a booking confirmation to fill the form",
+      rememberMe: "Keep me signed in on this phone",
+      stayLength: "Nights",
       advancedDetails: "More details",
       adults: "Adults",
       admin: "Admin",
@@ -317,6 +359,9 @@
     remoteReady: null,
     earnings: [],
     formSeed: null,
+    ledgerView: "upcoming",
+    // The stay length to keep when the check-in moves.
+    keptNights: 1,
     searchTerm: "",
     selectedDate: toISO(today()),
   };
@@ -369,7 +414,16 @@
     nextMonth: document.getElementById("nextMonth"),
     notePreview: document.getElementById("notePreview"),
     notes: document.getElementById("notes"),
-    platform: document.getElementById("platform"),
+    platformOptions: document.getElementById("platformOptions"),
+    pasteBox: document.getElementById("pasteBox"),
+    pasteText: document.getElementById("pasteText"),
+    pasteFill: document.getElementById("pasteFill"),
+    nightsCount: document.getElementById("nightsCount"),
+    overlapWarning: document.getElementById("overlapWarning"),
+    ownerAddFab: document.getElementById("ownerAddFab"),
+    adminRemember: document.getElementById("adminRemember"),
+    ledgerList: document.getElementById("ledgerList"),
+    ledgerTabs: document.getElementById("ledgerTabs"),
     prevMonth: document.getElementById("prevMonth"),
     refreshButton: document.getElementById("refreshButton"),
     resetButton: document.getElementById("resetButton"),
@@ -523,13 +577,20 @@
         return;
       }
 
+      // The day the owner is looking at becomes the check-in.
+      if (action.dataset.action === "add") {
+        closeBookingModal();
+        resetForm();
+        openFormModal();
+        return;
+      }
+
       const booking = state.bookings.find((item) => item.id === action.dataset.id);
       if (!booking) return;
 
       if (action.dataset.action === "edit") {
         closeBookingModal();
-        fillForm(booking);
-        openFormModal();
+        editBooking(booking);
       }
 
       if (action.dataset.action === "delete") {
@@ -557,11 +618,13 @@
       // Merge over whatever the booking already held, so fields this form no
       // longer shows survive an edit.
       const previous = currentBooking(edited.id);
+      const { id: seedId, ...seed } = state.formSeed || {};
       const draft = {
         villaRoom: "Willow Villa",
-        // A booking read out of a PDF carries details the short form has no field
-        // for; keep them rather than dropping them at the first save.
-        ...(previous || state.formSeed || {}),
+        // A booking read out of a PDF or a pasted confirmation carries details the
+        // short form has no field for; keep them rather than dropping them at save.
+        ...(previous || {}),
+        ...seed,
         ...edited,
       };
       if (!draft.checkIn || !draft.checkOut || parseISO(draft.checkOut) <= parseISO(draft.checkIn)) {
@@ -600,7 +663,9 @@
       state.selectedDate = booking.checkIn;
       state.currentMonth = startOfMonth(parseISO(booking.checkIn));
 
-      const saved = await saveBookings();
+      // Only this booking goes to the server. Sending every booking this phone holds
+      // would bring back any that were deleted on another device since it loaded.
+      const saved = await saveBookings({ changed: [booking] });
       render();
       if (!saved.ok) {
         showFormError(`${t("saveNotShared")} ${saved.error?.message || ""}`.trim());
@@ -617,8 +682,42 @@
     els.resetButton.addEventListener("click", resetForm);
     els.importButton.addEventListener("click", importSelectedFile);
     els.notes.addEventListener("input", renderNotePreview);
-    ["checkIn", "checkOut"].forEach((id) => {
-      document.getElementById(id)?.addEventListener("change", renderStayNights);
+    // Moving the check-in keeps the length of the stay; moving the check-out changes it.
+    ["input", "change"].forEach((type) => {
+      document.getElementById("checkIn")?.addEventListener(type, keepNightsAfterCheckIn);
+      document.getElementById("checkOut")?.addEventListener(type, renderStayNights);
+    });
+    els.bookingForm.addEventListener("click", (event) => {
+      const nightButton = event.target.closest("button[data-nights]");
+      if (nightButton) {
+        setNights(Math.max(1, (formNights() || 1) + Number(nightButton.dataset.nights)));
+        return;
+      }
+      const stepButton = event.target.closest("button[data-step]");
+      if (!stepButton) return;
+      const input = document.getElementById(stepButton.dataset.step);
+      if (!input) return;
+      const min = Number(input.min || 0);
+      input.value = String(Math.max(min, (Number(input.value) || 0) + Number(stepButton.dataset.delta)));
+    });
+    els.pasteFill.addEventListener("click", fillFromPaste);
+    els.ownerAddFab.addEventListener("click", () => {
+      resetForm();
+      openFormModal();
+    });
+    els.ledgerTabs.addEventListener("click", (event) => {
+      const tab = event.target.closest("[data-ledger]");
+      if (!tab) return;
+      state.ledgerView = tab.dataset.ledger;
+      renderLedger();
+    });
+    els.ledgerList.addEventListener("click", (event) => {
+      const row = event.target.closest("[data-edit]");
+      if (!row) return;
+      const booking = currentBooking(row.dataset.edit);
+      if (!booking) return;
+      closeAdminPanel();
+      editBooking(booking);
     });
 
     els.refreshButton.addEventListener("click", () => refreshFromCloud({ force: true }));
@@ -686,7 +785,7 @@
 
       if (state.remoteClient) {
         try {
-          await signInRemoteAdmin(username, password);
+          await signInRemoteAdmin(username, password, els.adminRemember.checked);
           closeAdminLogin();
         } catch (error) {
           els.adminLoginError.textContent = error.message || t("adminLoginError");
@@ -696,7 +795,7 @@
         return;
       }
       if (username === ADMIN_USERNAME && credentialHash(password) === ADMIN_PASSWORD_HASH) {
-        rememberOwnerSession(true);
+        rememberOwnerSession(true, els.adminRemember.checked);
         setAdminMode(true);
         closeAdminLogin();
         reloadPage();
@@ -992,7 +1091,7 @@
     ]);
   }
 
-  async function signInRemoteAdmin(username, password) {
+  async function signInRemoteAdmin(username, password, remember = false) {
     if (username !== state.remoteConfig.adminUsername) throw new Error(t("adminLoginError"));
     if (!state.remoteConfig.adminEmail) throw new Error(t("adminEmailMissing"));
 
@@ -1013,7 +1112,7 @@
     }
 
     state.isAdmin = true;
-    rememberOwnerSession(true);
+    rememberOwnerSession(true, remember);
     state.bookings = await loadBookings();
     state.earnings = await fetchRemoteEarnings();
     render();
@@ -1062,9 +1161,12 @@
     }
   }
 
-  // Survives the reload but not closing the tab, so a shared phone does not stay
-  // signed in as owner.
-  function rememberOwnerSession(isOwner) {
+  // By default this survives the reload but not closing the tab, so a shared phone
+  // does not stay signed in as owner. On the owner's own phone they can ask to stay
+  // signed in; logging out forgets that too.
+  function rememberOwnerSession(isOwner, remember = false) {
+    if (isOwner && remember) storage.set(OWNER_REMEMBER_KEY, "1");
+    if (!isOwner) storage.remove(OWNER_REMEMBER_KEY);
     try {
       if (isOwner) {
         window.sessionStorage.setItem(OWNER_SESSION_KEY, "1");
@@ -1090,6 +1192,7 @@
   }
 
   function hadOwnerSession() {
+    if (storage.get(OWNER_REMEMBER_KEY) === "1") return true;
     try {
       return window.sessionStorage.getItem(OWNER_SESSION_KEY) === "1";
     } catch {
@@ -1162,6 +1265,7 @@
 
   function renderAdminUi() {
     document.body.classList.toggle("admin-mode", state.isAdmin);
+    els.ownerAddFab.hidden = !state.isAdmin;
     els.adminButtonLabel.textContent = state.isAdmin ? t("ownerView") : t("admin");
   }
 
@@ -1182,7 +1286,65 @@
     els.financeBookings.textContent = String(activeBookings.length);
     els.financeNights.textContent = String(bookedNights);
     els.financeAverage.textContent = formatMoney(averageBooking);
+    renderLedger();
     renderEarnings();
+  }
+
+  // Every booking with what it paid, a month at a time, so the owner can see the
+  // money without opening each day. Tapping one opens it for editing.
+  function renderLedger() {
+    const upcoming = state.ledgerView !== "past";
+    els.ledgerTabs.querySelectorAll("[data-ledger]").forEach((tab) => {
+      tab.setAttribute("aria-pressed", String((tab.dataset.ledger === "past") !== upcoming));
+    });
+
+    const todayIso = toISO(today());
+    const list = activeBookings()
+      .filter((booking) => (upcoming ? booking.checkOut >= todayIso : booking.checkOut < todayIso))
+      .sort((a, b) => (upcoming ? a.checkIn.localeCompare(b.checkIn) : b.checkIn.localeCompare(a.checkIn)));
+    if (!list.length) {
+      els.ledgerList.innerHTML = `<p class="ledger-empty">${escapeHtml(t("ledgerEmpty"))}</p>`;
+      return;
+    }
+
+    const months = new Map();
+    list.forEach((booking) => {
+      const key = booking.checkIn.slice(0, 7);
+      if (!months.has(key)) months.set(key, []);
+      months.get(key).push(booking);
+    });
+    const monthFormatter = new Intl.DateTimeFormat(locale(), { month: "long", year: "numeric" });
+    els.ledgerList.innerHTML = [...months.entries()]
+      .map(([key, bookings]) => {
+        const [year, month] = key.split("-").map(Number);
+        const total = bookings.reduce((sum, booking) => sum + bookingAmount(booking), 0);
+        return `
+          <div class="ledger-month">
+            <div class="ledger-month-head">
+              <span>${escapeHtml(monthFormatter.format(new Date(year, month - 1, 1)))}</span>
+              <strong>${escapeHtml(formatMoney(total))}</strong>
+            </div>
+            ${bookings.map(renderLedgerRow).join("")}
+          </div>
+        `;
+      })
+      .join("");
+  }
+
+  function renderLedgerRow(booking) {
+    const source = getSource(booking.platform);
+    const stayNights = nights(booking);
+    const hasAmount = Boolean(clean(booking.amountPaid));
+    return `
+      <button class="ledger-row" type="button" data-edit="${escapeAttr(booking.id)}">
+        <span class="ledger-source ${source.className}" aria-hidden="true"></span>
+        <span class="ledger-guest">
+          <strong>${escapeHtml(booking.guestName)}</strong>
+          <small>${escapeHtml(formatShortDate(booking.checkIn))} – ${escapeHtml(formatShortDate(booking.checkOut))} · ${stayNights} ${escapeHtml(stayNights === 1 ? t("night") : t("nights"))} · ${escapeHtml(source.label)}</small>
+        </span>
+        <span class="ledger-amount${hasAmount ? "" : " missing"}">${escapeHtml(hasAmount ? formatMoney(bookingAmount(booking)) : t("noAmount"))}</span>
+      </button>
+    `;
   }
 
   function renderEarnings() {
@@ -1242,15 +1404,92 @@
   // The night count sits between the two dates, so the length of the stay is
   // visible while it is being chosen rather than only after saving.
   function renderStayNights() {
+    renderOverlapWarning();
+    const count = formNights();
+    if (els.nightsCount) els.nightsCount.textContent = count ? String(count) : "–";
+    if (count) state.keptNights = count;
     if (!els.stayNights) return;
+    els.stayNights.textContent = count ? `${count} ${count === 1 ? t("night") : t("nights")}` : "";
+  }
+
+  // Nights between the form's two dates, or 0 while they do not make a stay.
+  function formNights() {
     const from = clean(document.getElementById("checkIn")?.value);
     const to = clean(document.getElementById("checkOut")?.value);
-    if (!from || !to || to <= from) {
-      els.stayNights.textContent = "";
+    if (!from || !to || to <= from) return 0;
+    return Math.max(1, Math.round((parseISO(to) - parseISO(from)) / DAY_MS));
+  }
+
+  function setNights(count) {
+    const from = clean(document.getElementById("checkIn")?.value);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(from)) return;
+    setValue("checkOut", toISO(addDays(parseISO(from), count)));
+    renderStayNights();
+  }
+
+  function keepNightsAfterCheckIn() {
+    setNights(state.keptNights || 1);
+  }
+
+  // Says which stay is in the way while the dates are being picked, instead of
+  // only at the last step.
+  function renderOverlapWarning() {
+    if (!els.overlapWarning) return;
+    const checkIn = clean(document.getElementById("checkIn")?.value);
+    const checkOut = clean(document.getElementById("checkOut")?.value);
+    const clashes =
+      checkIn && checkOut && checkOut > checkIn
+        ? overlappingBookings({ id: els.bookingInternalId.value, checkIn, checkOut })
+        : [];
+    els.overlapWarning.hidden = !clashes.length;
+    els.overlapWarning.textContent = clashes.length
+      ? `${t("overlapInline")} ${clashes
+          .map((item) => `${item.guestName} (${formatShortDate(item.checkIn)} – ${formatShortDate(item.checkOut)})`)
+          .join(", ")}`
+      : "";
+  }
+
+  // Reads a confirmation email or message pasted by the owner, with the same reader
+  // the PDF import uses, and fills the form for them to check.
+  function fillFromPaste() {
+    const text = els.pasteText.value;
+    if (!clean(text)) {
+      toast(t("pasteNothing"));
       return;
     }
-    const count = Math.max(1, Math.round((parseISO(to) - parseISO(from)) / DAY_MS));
-    els.stayNights.textContent = `${count} ${count === 1 ? t("night") : t("nights")}`;
+    const current = readForm();
+    const [parsed] = parsePdfBookings(text, current.platform || "direct");
+    if (!parsed) {
+      const phone = findPdfPhone(clean(text).replace(/[^\S\n]+/g, " "));
+      if (phone) {
+        setValue("phone", phone);
+        toast(t("pastePhoneOnly"));
+      } else {
+        toast(t("pasteNothing"));
+      }
+      return;
+    }
+    const placeholderName = `${getSource(parsed.platform).label} booking`;
+    const merged = {
+      ...current,
+      ...parsed,
+      id: current.id,
+      guestName: parsed.guestName === placeholderName && current.guestName ? current.guestName : parsed.guestName,
+      phone: parsed.phone || current.phone,
+      amountPaid: parsed.amountPaid || current.amountPaid,
+      notes: current.notes,
+    };
+    state.formSeed = { ...(state.formSeed || {}), ...parsed, id: current.id };
+    fillForm(merged);
+    els.pasteText.value = "";
+    els.pasteBox.open = false;
+    toast(t("pasteFilled"));
+  }
+
+  function editBooking(booking) {
+    resetForm();
+    fillForm(booking);
+    openFormModal();
   }
 
   function renderNotePreview() {
@@ -1576,6 +1815,16 @@
 
 
 
+  function ownerAddButton() {
+    if (!state.isAdmin || !state.selectedDate) return "";
+    return `
+      <button class="primary-button add-on-date" type="button" data-action="add">
+        <svg><use href="#icon-plus"></use></svg>
+        <span>${escapeHtml(t("addOnDate"))}</span>
+      </button>
+    `;
+  }
+
   function renderSelectedDate() {
     if (!state.bookings.length) {
       els.selectedTitle.textContent = state.selectedDate ? formatFullDate(state.selectedDate) : t("calendar");
@@ -1585,6 +1834,7 @@
           <strong>${escapeHtml(t("emptyLoaded"))}</strong>
           <span>${escapeHtml(t("emptyLoadedHelp"))}</span>
         </div>
+        ${ownerAddButton()}
       `;
       return;
     }
@@ -1601,11 +1851,11 @@
     els.selectedCount.textContent = String(bookings.length);
 
     if (!bookings.length) {
-      els.selectedBookings.innerHTML = `<div class="empty-state">${escapeHtml(t("emptyDate"))}</div>`;
+      els.selectedBookings.innerHTML = `<div class="empty-state">${escapeHtml(t("emptyDate"))}</div>${ownerAddButton()}`;
       return;
     }
 
-    els.selectedBookings.innerHTML = bookings
+    els.selectedBookings.innerHTML = ownerAddButton() + bookings
       .sort(
         (a, b) =>
           dayRole(a, state.selectedDate) - dayRole(b, state.selectedDate) ||
@@ -1857,8 +2107,16 @@
     const sourceOptions = SOURCES.map(
       (source) => `<option value="${source.id}">${escapeHtml(source.label)}</option>`,
     ).join("");
-    els.platform.innerHTML = sourceOptions;
     els.importSource.innerHTML = sourceOptions;
+    // One tap per source on the form, instead of a dropdown.
+    els.platformOptions.innerHTML = SOURCES.map(
+      (source) => `
+        <label class="source-option ${source.className}">
+          <input type="radio" name="platform" value="${source.id}" required />
+          <span>${escapeHtml(source.label)}</span>
+        </label>
+      `,
+    ).join("");
     populateStatusSelects();
   }
 
@@ -1970,7 +2228,8 @@
   }
 
   function setValue(id, value) {
-    const element = document.getElementById(id);
+    // The source is a group of radio buttons, which the form knows by name.
+    const element = document.getElementById(id) || els.bookingForm.elements.namedItem(id);
     if (element) element.value = value ?? "";
   }
 
@@ -2046,11 +2305,13 @@
   // Returns whether the booking actually reached shared storage. Callers decide what
   // to say; announcing "saved" for a write the server refused is how a booking ends
   // up on one phone and nowhere else.
-  async function saveBookings({ syncRemote = true } = {}) {
+  // "changed" names the bookings to send. Sending everything this phone holds would
+  // bring back any booking deleted on another device since this one loaded.
+  async function saveBookings({ syncRemote = true, changed = null } = {}) {
     persistBookings(state.bookings);
     if (!syncRemote || !state.remoteClient || !state.isAdmin) return { ok: true };
     try {
-      await syncRemoteBookings(state.bookings);
+      await syncRemoteBookings(changed || state.bookings);
       state.remoteError = "";
       state.lastSyncedAt = Date.now();
       return { ok: true };
@@ -2264,7 +2525,7 @@
     const result = mergeBookings(imported);
     state.selectedDate = imported[0].checkIn;
     state.currentMonth = startOfMonth(parseISO(state.selectedDate));
-    await saveBookings();
+    await saveBookings({ changed: result.changed });
     render();
     closeImportModal();
     toast(`${t("importDone")} (${result.added + result.updated})`);
@@ -2680,21 +2941,25 @@
   function mergeBookings(imported) {
     let added = 0;
     let updated = 0;
+    const changed = [];
 
     imported.forEach((booking) => {
       const existingIndex = findExistingBookingIndex(booking);
       if (existingIndex >= 0) {
         const existing = state.bookings[existingIndex];
         state.bookings[existingIndex] = { ...existing, ...booking, id: existing.id };
+        changed.push(state.bookings[existingIndex]);
         updated += 1;
         return;
       }
 
-      state.bookings.push({ ...booking, id: createId() });
+      const fresh = { ...booking, id: createId() };
+      state.bookings.push(fresh);
+      changed.push(fresh);
       added += 1;
     });
 
-    return { added, updated };
+    return { added, updated, changed };
   }
 
   function findExistingBookingIndex(booking) {

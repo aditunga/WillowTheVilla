@@ -17,7 +17,7 @@
     <link rel="icon" href="assets/logo.png" />
     <link rel="apple-touch-icon" href="assets/logo.png" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260821-2030" />
+    <link rel="stylesheet" href="styles.css?v=20261106-1" />
   </head>
   <body>
     <svg class="sprite" aria-hidden="true" focusable="false">
@@ -132,6 +132,11 @@
       </main>
     </div>
 
+    <button class="owner-add-fab" id="ownerAddFab" type="button" hidden>
+      <svg><use href="#icon-plus"></use></svg>
+      <span data-i18n="addBooking">బుకింగ్ జోడించు</span>
+    </button>
+
     <div class="form-modal" id="formModal" hidden>
       <section class="entry-card form-modal-panel" id="entryCard" aria-labelledby="formModalTitle" role="dialog" aria-modal="true">
         <div class="modal-header">
@@ -143,7 +148,16 @@
 
         <form id="bookingForm">
           <input type="hidden" id="bookingInternalId" />
+          <details class="paste-box" id="pasteBox">
+            <summary data-i18n="pasteTitle">బుకింగ్ మెసేజ్ పేస్ట్ చేయండి</summary>
+            <textarea id="pasteText" rows="5" data-i18n-placeholder="pastePlaceholder"></textarea>
+            <button class="ghost-button" id="pasteFill" type="button" data-i18n="pasteFill">ఫారం నింపు</button>
+          </details>
           <div class="form-grid">
+            <fieldset class="source-picker full">
+              <legend data-i18n="platform">ఎక్కడ బుక్ అయింది</legend>
+              <div class="source-options" id="platformOptions"></div>
+            </fieldset>
             <label>
               <span data-i18n="guestName">అతిథి పేరు</span>
               <input id="guestName" name="guestName" autocomplete="name" required />
@@ -158,10 +172,6 @@
                 data-i18n-placeholder="phonePlaceholder"
                 placeholder="నంబర్ లేకపోతే ఖాళీగా వదిలేయండి"
               />
-            </label>
-            <label>
-              <span data-i18n="platform">ఎక్కడ బుక్ అయింది</span>
-              <select id="platform" name="platform" required></select>
             </label>
             <div class="stay-picker full">
               <div class="stay-picker-leg">
@@ -180,19 +190,41 @@
               </div>
             </div>
 
+            <div class="nights-stepper full">
+              <span data-i18n="stayLength">ఎన్ని రాత్రులు</span>
+              <span class="stepper">
+                <button class="step-button" type="button" data-nights="-1" data-i18n-aria-label="fewerNights">−</button>
+                <output id="nightsCount">1</output>
+                <button class="step-button" type="button" data-nights="1" data-i18n-aria-label="moreNights">+</button>
+              </span>
+            </div>
+            <p class="form-warning full" id="overlapWarning" role="status" hidden></p>
+
             <div class="guest-counts full">
-              <label>
-                <span data-i18n="adults">పెద్దలు</span>
-                <input id="adults" name="adults" type="number" min="1" value="2" required />
-              </label>
-              <label>
-                <span data-i18n="children">పిల్లలు</span>
-                <input id="children" name="children" type="number" min="0" value="0" />
-              </label>
-              <label>
-                <span data-i18n="pets">పెంపుడు జంతువులు</span>
-                <input id="pets" name="pets" type="number" min="0" value="0" />
-              </label>
+              <div class="guest-count">
+                <label for="adults" data-i18n="adults">పెద్దలు</label>
+                <span class="stepper">
+                  <button class="step-button" type="button" data-step="adults" data-delta="-1" data-i18n-aria-label="fewer">−</button>
+                  <input id="adults" name="adults" type="number" min="1" value="2" inputmode="numeric" required />
+                  <button class="step-button" type="button" data-step="adults" data-delta="1" data-i18n-aria-label="more">+</button>
+                </span>
+              </div>
+              <div class="guest-count">
+                <label for="children" data-i18n="children">పిల్లలు</label>
+                <span class="stepper">
+                  <button class="step-button" type="button" data-step="children" data-delta="-1" data-i18n-aria-label="fewer">−</button>
+                  <input id="children" name="children" type="number" min="0" value="0" inputmode="numeric" />
+                  <button class="step-button" type="button" data-step="children" data-delta="1" data-i18n-aria-label="more">+</button>
+                </span>
+              </div>
+              <div class="guest-count">
+                <label for="pets" data-i18n="pets">పెంపుడు జంతువులు</label>
+                <span class="stepper">
+                  <button class="step-button" type="button" data-step="pets" data-delta="-1" data-i18n-aria-label="fewer">−</button>
+                  <input id="pets" name="pets" type="number" min="0" value="0" inputmode="numeric" />
+                  <button class="step-button" type="button" data-step="pets" data-delta="1" data-i18n-aria-label="more">+</button>
+                </span>
+              </div>
             </div>
             <label>
               <span data-i18n="amountPaid">చెల్లించిన మొత్తం</span>
@@ -284,6 +316,10 @@
           <span data-i18n="adminPassword">పాస్‌వర్డ్</span>
           <input id="adminPassword" name="adminPassword" type="password" autocomplete="current-password" required />
         </label>
+        <label class="remember-row">
+          <input id="adminRemember" type="checkbox" />
+          <span data-i18n="rememberMe">ఈ ఫోన్‌లో లాగిన్‌గా ఉంచు</span>
+        </label>
         <p class="admin-error" id="adminLoginError" data-i18n="adminLoginError" hidden>
           యూజర్ పేరు లేదా పాస్‌వర్డ్ తప్పు
         </p>
@@ -300,6 +336,22 @@
           <button class="square-button" id="closeAdminPanel" type="button" data-i18n-aria-label="close">
             <svg><use href="#icon-x"></use></svg>
           </button>
+        </div>
+
+        <div class="admin-panel-actions">
+          <button class="primary-button" id="adminAddBooking" type="button">
+            <svg><use href="#icon-plus"></use></svg>
+            <span data-i18n="quickAdd">జోడించు</span>
+          </button>
+          <button class="ghost-button" id="adminImportBookings" type="button">
+            <svg><use href="#icon-upload"></use></svg>
+            <span data-i18n="importShort">ఇంపోర్ట్</span>
+          </button>
+          <button class="ghost-button" id="adminExportCsv" type="button">
+            <svg><use href="#icon-download"></use></svg>
+            <span>CSV</span>
+          </button>
+          <button class="danger-button" id="adminLogout" type="button" data-i18n="logout">లాగౌట్</button>
         </div>
 
         <div class="finance-grid" aria-label="Owner financial summary">
@@ -325,6 +377,17 @@
           </article>
         </div>
 
+        <section class="ledger" aria-labelledby="ledgerTitle">
+          <div class="ledger-head">
+            <h3 id="ledgerTitle" data-i18n="ledgerTitle">బుకింగ్‌లు & చెల్లింపులు</h3>
+            <div class="ledger-tabs" id="ledgerTabs" role="group">
+              <button class="ledger-tab" type="button" data-ledger="upcoming" aria-pressed="true" data-i18n="ledgerUpcoming">రాబోయేవి</button>
+              <button class="ledger-tab" type="button" data-ledger="past" aria-pressed="false" data-i18n="ledgerPast">గతవి</button>
+            </div>
+          </div>
+          <div class="ledger-list" id="ledgerList"></div>
+        </section>
+
         <section class="earnings-block" id="earningsBlock" hidden>
           <div class="earnings-head">
             <h3 data-i18n="platformEarnings">ప్లాట్‌ఫారమ్ ఆదాయం</h3>
@@ -337,25 +400,10 @@
           </details>
         </section>
 
-        <div class="admin-panel-actions">
-          <button class="primary-button" id="adminAddBooking" type="button">
-            <svg><use href="#icon-plus"></use></svg>
-            <span data-i18n="quickAdd">జోడించు</span>
-          </button>
-          <button class="ghost-button" id="adminImportBookings" type="button">
-            <svg><use href="#icon-upload"></use></svg>
-            <span data-i18n="importShort">ఇంపోర్ట్</span>
-          </button>
-          <button class="ghost-button" id="adminExportCsv" type="button">
-            <svg><use href="#icon-download"></use></svg>
-            <span>CSV</span>
-          </button>
-          <button class="danger-button" id="adminLogout" type="button" data-i18n="logout">లాగౌట్</button>
-        </div>
       </section>
     </div>
 
-    <script src="supabase-config.js?v=20260821-2030"></script>
-    <script src="app.js?v=20260821-2030"></script>
+    <script src="supabase-config.js?v=20261106-1"></script>
+    <script src="app.js?v=20261106-1"></script>
   </body>
 </html>

@@ -125,7 +125,7 @@ function createSupabaseStub({
   return { server, library: { createClient: () => client } };
 }
 
-function startApp({ bookings = [], lang = "en", supabase = null, session = null, visualViewport = null } = {}) {
+function startApp({ bookings = [], lang = "en", supabase = null, session = null, visualViewport = null, now = null } = {}) {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   const virtualConsole = new VirtualConsole();
   const errors = [];
@@ -155,6 +155,23 @@ function startApp({ bookings = [], lang = "en", supabase = null, session = null,
 
   if (visualViewport) {
     Object.defineProperty(window, "visualViewport", { value: visualViewport, configurable: true });
+  }
+
+  // Specs written around fixed dates name the day they assume is today, so they keep
+  // passing once the real calendar has moved on. "now" is an ISO date.
+  if (now) {
+    const RealDate = window.Date;
+    const fixed = new RealDate(`${now}T10:00:00`).getTime();
+    class FixedDate extends RealDate {
+      constructor(...args) {
+        if (args.length) super(...args);
+        else super(fixed);
+      }
+      static now() {
+        return fixed;
+      }
+    }
+    window.Date = FixedDate;
   }
 
   const confirms = [];

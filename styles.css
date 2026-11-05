@@ -1705,3 +1705,421 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* --- owner: adding a booking -------------------------------------------------- */
+.owner-add-fab {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 20px 0 16px;
+  border: 1px solid var(--willow);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(180deg, var(--willow-2), var(--willow));
+  color: #fff;
+  font-weight: 950;
+  box-shadow: 0 12px 28px rgba(20, 93, 59, 0.34);
+}
+
+.owner-add-fab[hidden],
+body.modal-open .owner-add-fab {
+  display: none;
+}
+
+.owner-add-fab svg {
+  width: 20px;
+  height: 20px;
+}
+
+.add-on-date {
+  width: 100%;
+  margin: 0 0 12px;
+}
+
+.empty-state + .add-on-date {
+  margin: 12px 0 0;
+}
+
+.paste-box {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px dashed #b9d3c4;
+  border-radius: var(--radius);
+  background: #f3f9f5;
+}
+
+.paste-box summary {
+  color: var(--willow);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.paste-box[open] summary {
+  margin-bottom: 10px;
+}
+
+.paste-box textarea {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.paste-box .ghost-button {
+  width: 100%;
+}
+
+.source-picker {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.source-picker legend {
+  margin-bottom: 6px;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.source-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.source-option {
+  position: relative;
+  display: block;
+}
+
+.source-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.source-option span {
+  display: grid;
+  place-items: center;
+  min-height: var(--tap);
+  margin: 0;
+  padding: 0 8px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.source-option input:focus-visible + span {
+  box-shadow: var(--ring);
+}
+
+.source-option.airbnb input:checked + span {
+  border-color: var(--airbnb-ink);
+  background: var(--airbnb-ink);
+  color: #fff;
+}
+
+.source-option.booking input:checked + span {
+  border-color: var(--booking);
+  background: var(--booking);
+  color: #fff;
+}
+
+.source-option.makemytrip input:checked + span {
+  border-color: var(--makemytrip);
+  background: var(--makemytrip);
+  color: #fff;
+}
+
+.source-option.direct input:checked + span {
+  border-color: var(--direct);
+  background: var(--direct);
+  color: #fff;
+}
+
+.nights-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.nights-stepper > span:first-child {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.stepper {
+  display: grid;
+  grid-template-columns: var(--tap) minmax(0, 1fr) var(--tap);
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+label .stepper {
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.nights-stepper .stepper {
+  grid-template-columns: var(--tap) 44px var(--tap);
+}
+
+.stepper output,
+.stepper input {
+  min-width: 0;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 950;
+}
+
+.stepper input {
+  min-height: var(--tap);
+  -moz-appearance: textfield;
+}
+
+.stepper input::-webkit-outer-spin-button,
+.stepper input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.step-button {
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  min-height: var(--tap);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f7faf8;
+  color: var(--willow);
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.guest-counts .stepper {
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  gap: 4px;
+}
+
+.guest-counts .step-button {
+  width: 34px;
+}
+
+.form-warning {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #f1c9a8;
+  border-radius: var(--radius);
+  background: #fff6ee;
+  color: var(--warning);
+  font-weight: 900;
+}
+
+.form-warning[hidden] {
+  display: none;
+}
+
+.remember-row {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap);
+}
+
+.remember-row input {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+
+.remember-row span {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+/* --- owner panel: actions first, then every booking with its payment ----------- */
+.admin-panel-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 0 14px;
+}
+
+.admin-panel-actions #adminAddBooking {
+  grid-column: 1 / -1;
+}
+
+.ledger {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.ledger-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ledger-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.ledger-tabs {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: #eef3ef;
+}
+
+.ledger-tab {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.ledger-tab[aria-pressed="true"] {
+  background: #fff;
+  color: var(--willow);
+  box-shadow: 0 2px 6px rgba(20, 33, 27, 0.12);
+}
+
+.ledger-month + .ledger-month {
+  margin-top: 12px;
+}
+
+.ledger-month-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 2px 6px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.ledger-month-head strong {
+  color: var(--ink);
+}
+
+.ledger-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 58px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+}
+
+.ledger-row + .ledger-row {
+  margin-top: 6px;
+}
+
+.ledger-source {
+  width: 10px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  background: var(--direct);
+}
+
+.ledger-source.airbnb {
+  background: var(--airbnb-ink);
+}
+
+.ledger-source.booking {
+  background: var(--booking);
+}
+
+.ledger-source.makemytrip {
+  background: var(--makemytrip);
+}
+
+.ledger-guest {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ledger-guest strong,
+.ledger-guest small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ledger-guest small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.ledger-amount {
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.ledger-amount.missing {
+  color: var(--warning);
+  font-size: 0.8rem;
+}
+
+.ledger-empty {
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (min-width: 560px) {
+  .source-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* The +/- buttons sit beside the field, not inside its label. */
+.guest-count {
+  min-width: 0;
+}
+
+.guest-count > label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}

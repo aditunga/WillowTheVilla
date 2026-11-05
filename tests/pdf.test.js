@@ -73,7 +73,7 @@ module.exports = async function run() {
     assert($("#guestName").value === "Ravi Kumar", `name ${$("#guestName").value}`);
     assert($("#checkIn").value === "2026-09-04", `check-in ${$("#checkIn").value}`);
     assert($("#checkOut").value === "2026-09-07", `check-out ${$("#checkOut").value}`);
-    assert($("#platform").value === "airbnb", `platform ${$("#platform").value}`);
+    assert($("#bookingForm").elements.platform.value === "airbnb", `platform ${$("#bookingForm").elements.platform.value}`);
     assert($("#adults").value === "3", `adults ${$("#adults").value}`);
     assert($("#children").value === "1", `children ${$("#children").value}`);
     assert($("#phone").value === "+91 98480 12345", `phone ${$("#phone").value}`);
@@ -98,7 +98,7 @@ module.exports = async function run() {
   await test("a Booking.com confirmation reads dd/mm/yyyy and its own labels", async () => {
     await importPdf("booking-confirmation.pdf", [BOOKING_PDF]);
     assert($("#guestName").value === "Priya Ramesh", `name ${$("#guestName").value}`);
-    assert($("#platform").value === "booking", `platform ${$("#platform").value}`);
+    assert($("#bookingForm").elements.platform.value === "booking", `platform ${$("#bookingForm").elements.platform.value}`);
     assert($("#checkIn").value === "2026-09-12", `check-in ${$("#checkIn").value}`);
     assert($("#checkOut").value === "2026-09-14", `check-out ${$("#checkOut").value}`);
     assert($("#adults").value === "2", `adults ${$("#adults").value}`);
@@ -164,7 +164,7 @@ module.exports = async function run() {
     await app.settle();
     await app.settle();
     await app.settle();
-    assert($("#platform").value === "makemytrip", `platform ${$("#platform").value}`);
+    assert($("#bookingForm").elements.platform.value === "makemytrip", `platform ${$("#bookingForm").elements.platform.value}`);
     assert($("#checkIn").value === "2026-11-02", `check-in ${$("#checkIn").value}`);
     app.click("#closeFormModal");
   });
